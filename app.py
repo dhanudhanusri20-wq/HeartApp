@@ -54,9 +54,13 @@ if not st.session_state["logged_in"]:
     login()
     st.stop()
 
-# ---------------- LOAD MODEL ---------------- #
-model = joblib.load("heart_model.pkl")
-scaler = joblib.load("scaler.pkl")
+# ---------------- LOAD MODEL SAFELY ---------------- #
+try:
+    model = joblib.load("heart_model.pkl")
+    scaler = joblib.load("scaler.pkl")
+except:
+    st.error("Model files not found! Upload heart_model.pkl and scaler.pkl.")
+    st.stop()
 
 # ---------------- TITLE ---------------- #
 st.title("🫀 Heart Disease Risk Prediction System")
@@ -82,7 +86,6 @@ slope = st.selectbox("Slope (0-2)", [0,1,2])
 ca = st.selectbox("Major Vessels (0-3)", [0,1,2,3])
 thal = st.selectbox("Thal (1-3)", [1,2,3])
 
-# Encode categorical
 sex = 1 if sex=="Male" else 0
 fbs = 1 if fbs=="Yes" else 0
 exang = 1 if exang=="Yes" else 0
@@ -106,15 +109,11 @@ if st.button("Predict"):
     st.success(f"Prediction: {result_text}")
     st.info(f"Risk Score: {probability:.2f} → {risk}")
 
-    # Save history
     st.session_state["history"].append(probability)
+    st.rerun()
 
 # ======================================================
 # 📊 GRAPH
-# ======================================================
-
-# ======================================================
-# 📊 GRAPH SECTION
 # ======================================================
 
 if len(st.session_state["history"]) > 0:
@@ -122,23 +121,20 @@ if len(st.session_state["history"]) > 0:
     st.subheader("Risk Score Trend")
 
     fig, ax = plt.subplots()
-
     ax.plot(
         range(1, len(st.session_state["history"]) + 1),
         st.session_state["history"],
         marker='o'
     )
-
     ax.set_xlabel("Prediction Number")
     ax.set_ylabel("Risk Score")
-    ax.set_ylim(0, 1)   # because probability is between 0 and 1
+    ax.set_ylim(0, 1)
     ax.grid(True)
 
     st.pyplot(fig)
 
 else:
     st.info("No predictions yet. Click Predict to see graph.")
-
 
 # ======================================================
 # 📂 CSV BULK PREDICTION
@@ -154,7 +150,6 @@ if uploaded_file:
     st.write("Original Data Preview")
     st.write(df.head())
 
-    # -------- AUTO CLEAN --------
     df.columns = df.columns.str.strip().str.lower()
     df = df.fillna(df.median(numeric_only=True))
 
@@ -167,10 +162,15 @@ if uploaded_file:
     if "exang" in df.columns:
         df["exang"] = df["exang"].map({"Yes":1,"No":0}).fillna(df["exang"])
 
-    st.write("Cleaned Data Preview")
-    st.write(df.head())
+    expected_cols = [
+        "age","sex","cp","trestbps","chol","fbs",
+        "restecg","thalach","exang","oldpeak",
+        "slope","ca","thal"
+    ]
 
     try:
+        df = df[expected_cols]
+
         scaled = scaler.transform(df)
         preds = model.predict(scaled)
         probs = model.predict_proba(scaled)[:,1]
@@ -193,7 +193,7 @@ if uploaded_file:
         st.error("Column mismatch or invalid format!")
 
 # ======================================================
-# 📝 HISTORY SECTION
+# 📝 HISTORY
 # ======================================================
 
 st.subheader("Prediction History")
@@ -208,9 +208,10 @@ col1, col2 = st.columns(2)
 with col1:
     if st.button("Clear History"):
         st.session_state["history"] = []
-        st.success("History Cleared")
+        st.rerun()
 
 with col2:
     if st.button("Logout"):
         st.session_state["logged_in"] = False
         st.rerun()
+
