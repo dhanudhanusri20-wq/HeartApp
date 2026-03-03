@@ -18,12 +18,6 @@ st.set_page_config(
     layout="centered"
 )
 
-# ---------------- LOGO TOP ---------------- #
-try:
-    st.image("logo.png", width=120)
-except:
-    pass
-
 # ---------------- BACKGROUND ---------------- #
 def set_bg(image_file):
     try:
@@ -123,7 +117,7 @@ if st.button("Predict"):
 
     st.session_state["history"].append(probability)
 
-    # -------- PDF -------- #
+    # ---------------- PDF REPORT ---------------- #
     buffer = io.BytesIO()
     doc = SimpleDocTemplate(buffer, pagesize=A4)
     elements = []
@@ -139,7 +133,7 @@ if st.button("Predict"):
     buffer.seek(0)
 
     st.download_button(
-        "Download Prediction Report (PDF)",
+        label="Download Prediction Report (PDF)",
         data=buffer,
         file_name="prediction_report.pdf",
         mime="application/pdf"
@@ -151,6 +145,7 @@ if st.button("Predict"):
 
 if len(st.session_state["history"]) > 0:
     st.subheader("Risk Score Trend")
+
     fig, ax = plt.subplots()
     ax.plot(range(1, len(st.session_state["history"]) + 1),
             st.session_state["history"],
@@ -159,12 +154,13 @@ if len(st.session_state["history"]) > 0:
     ax.set_ylabel("Risk Score")
     ax.set_ylim(0,1)
     ax.grid(True)
+
     st.pyplot(fig)
 else:
     st.info("No predictions yet.")
 
 # ======================================================
-# BULK CSV
+# CSV BULK PREDICTION
 # ======================================================
 
 st.header("Bulk Prediction (CSV Upload)")
@@ -196,10 +192,11 @@ if uploaded_file:
         df["Prediction"] = preds
         df["Risk Score"] = probs
 
-        st.success("Bulk Prediction Completed")
+        st.success("Bulk Prediction Completed ✅")
         st.write(df)
 
         csv = df.to_csv(index=False).encode()
+
         st.download_button(
             "Download Results CSV",
             csv,
@@ -208,7 +205,7 @@ if uploaded_file:
         )
 
     except:
-        st.error("CSV format incorrect. Please check column names.")
+        st.error("CSV format incorrect. Check column names.")
 
 # ======================================================
 # HISTORY
@@ -227,6 +224,7 @@ with col1:
     if st.button("Clear History"):
         st.session_state["history"] = []
         st.success("History Cleared")
+        st.rerun()
 
 with col2:
     if st.button("Logout"):
