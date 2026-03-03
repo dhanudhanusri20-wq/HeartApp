@@ -64,11 +64,17 @@ if not st.session_state["logged_in"]:
     login()
     st.stop()
 
-# ---------------- LOAD MODEL ---------------- #
-model = joblib.load("heart_model.pkl")
-scaler = joblib.load("scaler.pkl")
+# ---------------- LOAD MODEL (CACHED) ---------------- #
+@st.cache_resource
+def load_model():
+    model = joblib.load("heart_model.pkl")
+    scaler = joblib.load("scaler.pkl")
+    return model, scaler
 
-# ---------------- TITLE ---------------- #
+model, scaler = load_model()
+
+# ---------------- TITLE + LOGO ---------------- #
+st.image("logo.png", width=120)
 st.title("🫀 Heart Disease Risk Prediction System")
 st.caption("AI-Based Clinical Decision Support Prototype")
 
@@ -92,6 +98,7 @@ slope = st.selectbox("Slope (0-2)", [0,1,2])
 ca = st.selectbox("Major Vessels (0-3)", [0,1,2,3])
 thal = st.selectbox("Thal (1-3)", [1,2,3])
 
+# Encode categorical
 sex = 1 if sex=="Male" else 0
 fbs = 1 if fbs=="Yes" else 0
 exang = 1 if exang=="Yes" else 0
@@ -128,6 +135,7 @@ if st.button("Predict"):
     elements.append(Paragraph(f"Age: {age}", styles["Normal"]))
     elements.append(Paragraph(f"Result: {result_text}", styles["Normal"]))
     elements.append(Paragraph(f"Risk Score: {probability:.2f}", styles["Normal"]))
+    elements.append(Paragraph(f"Risk Level: {risk}", styles["Normal"]))
 
     doc.build(elements)
     buffer.seek(0)
@@ -147,9 +155,11 @@ if len(st.session_state["history"]) > 0:
     st.subheader("Risk Score Trend")
 
     fig, ax = plt.subplots()
-    ax.plot(range(1, len(st.session_state["history"]) + 1),
-            st.session_state["history"],
-            marker='o')
+    ax.plot(
+        range(1, len(st.session_state["history"]) + 1),
+        st.session_state["history"],
+        marker='o'
+    )
     ax.set_xlabel("Prediction Number")
     ax.set_ylabel("Risk Score")
     ax.set_ylim(0,1)
@@ -160,7 +170,7 @@ else:
     st.info("No predictions yet.")
 
 # ======================================================
-# CSV BULK PREDICTION
+# BULK CSV PREDICTION
 # ======================================================
 
 st.header("Bulk Prediction (CSV Upload)")
@@ -179,7 +189,7 @@ if uploaded_file:
 
     try:
         df = df[expected_columns]
-        df = df.fillna(df.median(numeric_only=True))
+        df = df.fillna(0)
 
         df["sex"] = df["sex"].replace({"Male":1,"Female":0})
         df["fbs"] = df["fbs"].replace({"Yes":1,"No":0})
@@ -230,3 +240,4 @@ with col2:
     if st.button("Logout"):
         st.session_state["logged_in"] = False
         st.rerun()
+
