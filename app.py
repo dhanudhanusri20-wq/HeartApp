@@ -161,6 +161,10 @@ else:
 # CSV BULK PREDICTION
 # ======================================================
 
+# ======================================================
+# CSV BULK PREDICTION (FIXED PROPERLY)
+# ======================================================
+
 st.header("Bulk Prediction (CSV Upload)")
 
 uploaded_file = st.file_uploader("Upload CSV File", type=["csv"])
@@ -168,27 +172,42 @@ uploaded_file = st.file_uploader("Upload CSV File", type=["csv"])
 if uploaded_file:
     df = pd.read_csv(uploaded_file)
 
+    st.write("Uploaded Data Preview")
+    st.write(df.head())
+
+    # Clean column names
     df.columns = df.columns.str.strip().str.lower()
-    df = df.fillna(df.median(numeric_only=True))
 
-    if "sex" in df.columns:
-        df["sex"] = df["sex"].map({"Male":1,"Female":0}).fillna(df["sex"])
-
-    if "fbs" in df.columns:
-        df["fbs"] = df["fbs"].map({"Yes":1,"No":0}).fillna(df["fbs"])
-
-    if "exang" in df.columns:
-        df["exang"] = df["exang"].map({"Yes":1,"No":0}).fillna(df["exang"])
+    # Expected model columns
+    expected_columns = [
+        "age","sex","cp","trestbps","chol","fbs",
+        "restecg","thalach","exang","oldpeak",
+        "slope","ca","thal"
+    ]
 
     try:
+        # Keep only required columns in correct order
+        df = df[expected_columns]
+
+        # Fill missing values
+        df = df.fillna(df.median(numeric_only=True))
+
+        # Convert categorical if needed
+        df["sex"] = df["sex"].replace({"Male":1,"Female":0})
+        df["fbs"] = df["fbs"].replace({"Yes":1,"No":0})
+        df["exang"] = df["exang"].replace({"Yes":1,"No":0})
+
+        # Scale
         scaled = scaler.transform(df)
+
+        # Predict
         preds = model.predict(scaled)
         probs = model.predict_proba(scaled)[:,1]
 
         df["Prediction"] = preds
         df["Risk Score"] = probs
 
-        st.success("Bulk Prediction Completed")
+        st.success("Bulk Prediction Completed ✅")
         st.write(df)
 
         csv = df.to_csv(index=False).encode()
@@ -200,8 +219,9 @@ if uploaded_file:
             "text/csv"
         )
 
-    except:
-        st.error("Column mismatch or invalid format!")
+    except Exception as e:
+        st.error("CSV format incorrect. Please check column names.")
+
 
 # ======================================================
 # HISTORY
@@ -227,4 +247,5 @@ with col2:
         st.rerun()
 
         
+
 
