@@ -232,5 +232,3 @@ with col2:
     if st.button("Logout"):
         st.session_state["logged_in"] = False
         st.rerun()
-
-
