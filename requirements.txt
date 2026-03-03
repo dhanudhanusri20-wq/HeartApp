@@ -4,4 +4,7 @@ numpy
 pandas
 matplotlib
 scikit-learn
+reportlab
+
+
 
