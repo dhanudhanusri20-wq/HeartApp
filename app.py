@@ -4,6 +4,12 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 import base64
+import io
+
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer
+from reportlab.lib.styles import getSampleStyleSheet
+from reportlab.lib.pagesizes import A4
+from reportlab.lib.units import inch
 
 # ---------------- PAGE CONFIG ---------------- #
 st.set_page_config(page_title="Heart Disease Prediction", layout="centered")
@@ -28,7 +34,7 @@ def set_bg(image_file):
     except:
         pass
 
-set_bg("images/bg.jpg")
+set_bg("bg.jpg")
 
 # ---------------- SESSION INIT ---------------- #
 if "logged_in" not in st.session_state:
@@ -54,20 +60,16 @@ if not st.session_state["logged_in"]:
     login()
     st.stop()
 
-# ---------------- LOAD MODEL SAFELY ---------------- #
-try:
-    model = joblib.load("heart_model.pkl")
-    scaler = joblib.load("scaler.pkl")
-except:
-    st.error("Model files not found! Upload heart_model.pkl and scaler.pkl.")
-    st.stop()
+# ---------------- LOAD MODEL ---------------- #
+model = joblib.load("heart_model.pkl")
+scaler = joblib.load("scaler.pkl")
 
 # ---------------- TITLE ---------------- #
 st.title("🫀 Heart Disease Risk Prediction System")
 st.caption("AI-Based Clinical Decision Support Prototype")
 
 # ======================================================
-# 🔹 SINGLE PATIENT PREDICTION
+# SINGLE PATIENT PREDICTION
 # ======================================================
 
 st.header("Single Patient Prediction")
@@ -110,10 +112,31 @@ if st.button("Predict"):
     st.info(f"Risk Score: {probability:.2f} → {risk}")
 
     st.session_state["history"].append(probability)
-    st.rerun()
+
+    # ---------------- PDF GENERATION ---------------- #
+    buffer = io.BytesIO()
+    doc = SimpleDocTemplate(buffer, pagesize=A4)
+    elements = []
+    styles = getSampleStyleSheet()
+
+    elements.append(Paragraph("<b>Heart Disease Prediction Report</b>", styles["Title"]))
+    elements.append(Spacer(1, 0.5 * inch))
+    elements.append(Paragraph(f"Age: {age}", styles["Normal"]))
+    elements.append(Paragraph(f"Result: {result_text}", styles["Normal"]))
+    elements.append(Paragraph(f"Risk Score: {probability:.2f}", styles["Normal"]))
+
+    doc.build(elements)
+    buffer.seek(0)
+
+    st.download_button(
+        label="Download Prediction Report (PDF)",
+        data=buffer,
+        file_name="prediction_report.pdf",
+        mime="application/pdf"
+    )
 
 # ======================================================
-# 📊 GRAPH
+# GRAPH
 # ======================================================
 
 if len(st.session_state["history"]) > 0:
@@ -121,34 +144,29 @@ if len(st.session_state["history"]) > 0:
     st.subheader("Risk Score Trend")
 
     fig, ax = plt.subplots()
-    ax.plot(
-        range(1, len(st.session_state["history"]) + 1),
-        st.session_state["history"],
-        marker='o'
-    )
+    ax.plot(range(1, len(st.session_state["history"]) + 1),
+            st.session_state["history"],
+            marker='o')
     ax.set_xlabel("Prediction Number")
     ax.set_ylabel("Risk Score")
-    ax.set_ylim(0, 1)
+    ax.set_ylim(0,1)
     ax.grid(True)
 
     st.pyplot(fig)
 
 else:
-    st.info("No predictions yet. Click Predict to see graph.")
+    st.info("No predictions yet.")
 
 # ======================================================
-# 📂 CSV BULK PREDICTION
+# CSV BULK PREDICTION
 # ======================================================
 
-st.header("Bulk Prediction (CSV Upload with Auto Clean)")
+st.header("Bulk Prediction (CSV Upload)")
 
 uploaded_file = st.file_uploader("Upload CSV File", type=["csv"])
 
 if uploaded_file:
     df = pd.read_csv(uploaded_file)
-
-    st.write("Original Data Preview")
-    st.write(df.head())
 
     df.columns = df.columns.str.strip().str.lower()
     df = df.fillna(df.median(numeric_only=True))
@@ -162,15 +180,7 @@ if uploaded_file:
     if "exang" in df.columns:
         df["exang"] = df["exang"].map({"Yes":1,"No":0}).fillna(df["exang"])
 
-    expected_cols = [
-        "age","sex","cp","trestbps","chol","fbs",
-        "restecg","thalach","exang","oldpeak",
-        "slope","ca","thal"
-    ]
-
     try:
-        df = df[expected_cols]
-
         scaled = scaler.transform(df)
         preds = model.predict(scaled)
         probs = model.predict_proba(scaled)[:,1]
@@ -182,6 +192,7 @@ if uploaded_file:
         st.write(df)
 
         csv = df.to_csv(index=False).encode()
+
         st.download_button(
             "Download Results CSV",
             csv,
@@ -193,14 +204,14 @@ if uploaded_file:
         st.error("Column mismatch or invalid format!")
 
 # ======================================================
-# 📝 HISTORY
+# HISTORY
 # ======================================================
 
 st.subheader("Prediction History")
 st.write(st.session_state["history"])
 
 # ======================================================
-# 🗑 CLEAR & LOGOUT
+# CLEAR & LOGOUT
 # ======================================================
 
 col1, col2 = st.columns(2)
@@ -208,10 +219,12 @@ col1, col2 = st.columns(2)
 with col1:
     if st.button("Clear History"):
         st.session_state["history"] = []
-        st.rerun()
+        st.success("History Cleared")
 
 with col2:
     if st.button("Logout"):
         st.session_state["logged_in"] = False
         st.rerun()
+
+        
 
