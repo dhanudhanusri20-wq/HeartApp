@@ -12,7 +12,17 @@ from reportlab.lib.pagesizes import A4
 from reportlab.lib.units import inch
 
 # ---------------- PAGE CONFIG ---------------- #
-st.set_page_config(page_title="Heart Disease Prediction", layout="centered")
+st.set_page_config(
+    page_title="Heart Disease Prediction",
+    page_icon="logo.png",
+    layout="centered"
+)
+
+# ---------------- LOGO TOP ---------------- #
+try:
+    st.image("logo.png", width=120)
+except:
+    pass
 
 # ---------------- BACKGROUND ---------------- #
 def set_bg(image_file):
@@ -113,7 +123,7 @@ if st.button("Predict"):
 
     st.session_state["history"].append(probability)
 
-    # ---------------- PDF GENERATION ---------------- #
+    # -------- PDF -------- #
     buffer = io.BytesIO()
     doc = SimpleDocTemplate(buffer, pagesize=A4)
     elements = []
@@ -129,7 +139,7 @@ if st.button("Predict"):
     buffer.seek(0)
 
     st.download_button(
-        label="Download Prediction Report (PDF)",
+        "Download Prediction Report (PDF)",
         data=buffer,
         file_name="prediction_report.pdf",
         mime="application/pdf"
@@ -140,9 +150,7 @@ if st.button("Predict"):
 # ======================================================
 
 if len(st.session_state["history"]) > 0:
-
     st.subheader("Risk Score Trend")
-
     fig, ax = plt.subplots()
     ax.plot(range(1, len(st.session_state["history"]) + 1),
             st.session_state["history"],
@@ -151,18 +159,12 @@ if len(st.session_state["history"]) > 0:
     ax.set_ylabel("Risk Score")
     ax.set_ylim(0,1)
     ax.grid(True)
-
     st.pyplot(fig)
-
 else:
     st.info("No predictions yet.")
 
 # ======================================================
-# CSV BULK PREDICTION
-# ======================================================
-
-# ======================================================
-# CSV BULK PREDICTION (FIXED PROPERLY)
+# BULK CSV
 # ======================================================
 
 st.header("Bulk Prediction (CSV Upload)")
@@ -171,14 +173,8 @@ uploaded_file = st.file_uploader("Upload CSV File", type=["csv"])
 
 if uploaded_file:
     df = pd.read_csv(uploaded_file)
-
-    st.write("Uploaded Data Preview")
-    st.write(df.head())
-
-    # Clean column names
     df.columns = df.columns.str.strip().str.lower()
 
-    # Expected model columns
     expected_columns = [
         "age","sex","cp","trestbps","chol","fbs",
         "restecg","thalach","exang","oldpeak",
@@ -186,32 +182,24 @@ if uploaded_file:
     ]
 
     try:
-        # Keep only required columns in correct order
         df = df[expected_columns]
-
-        # Fill missing values
         df = df.fillna(df.median(numeric_only=True))
 
-        # Convert categorical if needed
         df["sex"] = df["sex"].replace({"Male":1,"Female":0})
         df["fbs"] = df["fbs"].replace({"Yes":1,"No":0})
         df["exang"] = df["exang"].replace({"Yes":1,"No":0})
 
-        # Scale
         scaled = scaler.transform(df)
-
-        # Predict
         preds = model.predict(scaled)
         probs = model.predict_proba(scaled)[:,1]
 
         df["Prediction"] = preds
         df["Risk Score"] = probs
 
-        st.success("Bulk Prediction Completed ✅")
+        st.success("Bulk Prediction Completed")
         st.write(df)
 
         csv = df.to_csv(index=False).encode()
-
         st.download_button(
             "Download Results CSV",
             csv,
@@ -219,9 +207,8 @@ if uploaded_file:
             "text/csv"
         )
 
-    except Exception as e:
+    except:
         st.error("CSV format incorrect. Please check column names.")
-
 
 # ======================================================
 # HISTORY
@@ -245,7 +232,5 @@ with col2:
     if st.button("Logout"):
         st.session_state["logged_in"] = False
         st.rerun()
-
-        
 
 
