@@ -3,209 +3,243 @@ import joblib
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
+import base64
+import io
 import sqlite3
 import hashlib
-import datetime
-import base64
 
-# ---------------- PAGE CONFIG ---------------- #
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer
+from reportlab.lib.styles import getSampleStyleSheet
+from reportlab.lib.pagesizes import A4
+from reportlab.lib.units import inch
+
+# ================= PAGE CONFIG =================
 st.set_page_config(
     page_title="Heart Disease Prediction",
     page_icon="logo.png",
     layout="centered"
 )
 
-# ---------------- BACKGROUND ---------------- #
+# ================= BACKGROUND =================
 def set_bg(image_file):
     try:
         with open(image_file, "rb") as f:
-            data = f.read()
-        encoded = base64.b64encode(data).decode()
-        page_bg_img = f"""
+            encoded = base64.b64encode(f.read()).decode()
+        st.markdown(f"""
         <style>
         .stApp {{
-           background-image: url("data:image/jpeg;base64,{encoded}");
-           background-size: cover;
-           background-position: center;
+            background-image: url("data:image/jpeg;base64,{encoded}");
+            background-size: cover;
         }}
         </style>
-        """
-        st.markdown(page_bg_img, unsafe_allow_html=True)
+        """, unsafe_allow_html=True)
     except:
         pass
 
 set_bg("bg.jpg")
 
-# ---------------- DATABASE ---------------- #
+# ================= DATABASE =================
 conn = sqlite3.connect("predictions.db", check_same_thread=False)
 c = conn.cursor()
 
-# Create users table
-c.execute("""
-CREATE TABLE IF NOT EXISTS users (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    username TEXT UNIQUE,
-    password_hash TEXT,
-    role TEXT,
-    created_at TEXT
-)
-""")
-
-# Create history table
 c.execute("""
 CREATE TABLE IF NOT EXISTS history (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    user_id INTEGER,
     age INTEGER,
     result TEXT,
-    risk_score REAL,
-    created_at TEXT
+    risk REAL
 )
 """)
 conn.commit()
 
-# ---------------- PASSWORD HASH ---------------- #
+# ================= PASSWORD HASH =================
 def hash_password(password):
     return hashlib.sha256(password.encode()).hexdigest()
 
-# ---------------- DEFAULT ADMIN ---------------- #
-def create_admin():
-    c.execute("SELECT * FROM users WHERE username=?", ("admin",))
-    if not c.fetchone():
-        c.execute("INSERT INTO users (username, password_hash, role, created_at) VALUES (?, ?, ?, ?)",
-                  ("admin", hash_password("admin123"), "admin", str(datetime.datetime.now())))
-        conn.commit()
+# Change password here if needed
+stored_user = "admin"
+stored_pass = hash_password("1234")
 
-create_admin()
-
-# ---------------- SESSION ---------------- #
+# ================= SESSION INIT =================
 if "logged_in" not in st.session_state:
-    st.session_state.logged_in = False
-if "user_id" not in st.session_state:
-    st.session_state.user_id = None
-if "role" not in st.session_state:
-    st.session_state.role = None
-if "username" not in st.session_state:
-    st.session_state.username = None
+    st.session_state["logged_in"] = False
 
-# ---------------- REGISTER ---------------- #
-def register():
-    st.subheader("Doctor Registration")
-    new_user = st.text_input("Username")
-    new_pass = st.text_input("Password", type="password")
-
-    if st.button("Register"):
-        try:
-            c.execute("INSERT INTO users (username, password_hash, role, created_at) VALUES (?, ?, ?, ?)",
-                      (new_user, hash_password(new_pass), "doctor", str(datetime.datetime.now())))
-            conn.commit()
-            st.success("Doctor Registered Successfully!")
-        except:
-            st.error("Username already exists!")
-
-# ---------------- LOGIN ---------------- #
+# ================= LOGIN =================
 def login():
     st.title("🔐 Login")
-    user = st.text_input("Username")
+
+    username = st.text_input("Username")
     password = st.text_input("Password", type="password")
 
     if st.button("Login"):
-        hashed = hash_password(password)
-        c.execute("SELECT id, role FROM users WHERE username=? AND password_hash=?", (user, hashed))
-        result = c.fetchone()
-
-        if result:
-            st.session_state.logged_in = True
-            st.session_state.user_id = result[0]
-            st.session_state.role = result[1]
-            st.session_state.username = user
+        if username == stored_user and hash_password(password) == stored_pass:
+            st.session_state["logged_in"] = True
             st.rerun()
         else:
-            st.error("Invalid Credentials")
+            st.error("Invalid Username or Password")
 
-# ---------------- LOAD MODEL ---------------- #
+if not st.session_state["logged_in"]:
+    login()
+    st.stop()
+
+# ================= LOAD MODEL =================
 model = joblib.load("heart_model.pkl")
 scaler = joblib.load("scaler.pkl")
 
-# ---------------- MAIN ---------------- #
-if not st.session_state.logged_in:
-    login()
-    st.markdown("---")
-    register()
-    st.stop()
+st.title("🫀 Heart Disease Risk Prediction System")
 
-# ---------------- SIDEBAR ---------------- #
-st.sidebar.title(f"Welcome {st.session_state.username}")
-menu = st.sidebar.radio("Menu", ["Predict", "Dashboard", "Logout"])
+# =====================================================
+# SINGLE PATIENT PREDICTION
+# =====================================================
 
-# ---------------- PREDICT ---------------- #
-if menu == "Predict":
-    st.title("🫀 Heart Disease Prediction")
+st.header("Single Patient Prediction")
 
-    age = st.number_input("Age", 20, 100, 50)
-    sex = st.selectbox("Sex", ["Male", "Female"])
-    cp = st.selectbox("Chest Pain Type", [0,1,2,3])
-    trestbps = st.number_input("Resting BP", 80, 200, 120)
-    chol = st.number_input("Cholesterol", 100, 400, 200)
-    fbs = st.selectbox("Fasting Blood Sugar >120", ["Yes", "No"])
-    restecg = st.selectbox("Rest ECG", [0,1,2])
-    thalach = st.number_input("Max Heart Rate", 60, 220, 150)
-    exang = st.selectbox("Exercise Induced Angina", ["Yes", "No"])
-    oldpeak = st.number_input("ST Depression", 0.0, 10.0, 1.0)
-    slope = st.selectbox("Slope", [0,1,2])
-    ca = st.selectbox("Major Vessels", [0,1,2,3])
-    thal = st.selectbox("Thal", [1,2,3])
+age = st.number_input("Age", 20, 100, 50)
+sex = st.selectbox("Sex", ["Male", "Female"])
+cp = st.selectbox("Chest Pain Type (0-3)", [0,1,2,3])
+trestbps = st.number_input("Resting BP", 80, 200, 120)
+chol = st.number_input("Cholesterol", 100, 400, 200)
+fbs = st.selectbox("FBS > 120", ["Yes", "No"])
+restecg = st.selectbox("Rest ECG (0-2)", [0,1,2])
+thalach = st.number_input("Max Heart Rate", 60, 220, 150)
+exang = st.selectbox("Exercise Angina", ["Yes", "No"])
+oldpeak = st.number_input("ST Depression", 0.0, 10.0, 1.0)
+slope = st.selectbox("Slope (0-2)", [0,1,2])
+ca = st.selectbox("Major Vessels (0-3)", [0,1,2,3])
+thal = st.selectbox("Thal (1-3)", [1,2,3])
 
-    sex = 1 if sex=="Male" else 0
-    fbs = 1 if fbs=="Yes" else 0
-    exang = 1 if exang=="Yes" else 0
+sex = 1 if sex=="Male" else 0
+fbs = 1 if fbs=="Yes" else 0
+exang = 1 if exang=="Yes" else 0
 
-    if st.button("Predict"):
-        input_data = np.array([[age, sex, cp, trestbps, chol, fbs,
-                                restecg, thalach, exang, oldpeak,
-                                slope, ca, thal]])
+if st.button("Predict"):
 
-        scaled = scaler.transform(input_data)
-        prediction = model.predict(scaled)[0]
-        probability = model.predict_proba(scaled)[0][1]
+    input_data = np.array([[age, sex, cp, trestbps, chol, fbs,
+                            restecg, thalach, exang, oldpeak,
+                            slope, ca, thal]])
 
-        result_text = "Heart Disease" if prediction==1 else "No Heart Disease"
+    input_scaled = scaler.transform(input_data)
 
-        st.success(result_text)
-        st.info(f"Risk Score: {probability:.2f}")
+    prediction = model.predict(input_scaled)[0]
+    probability = model.predict_proba(input_scaled)[0][1]
 
-        # Save to DB
-        c.execute("INSERT INTO history (user_id, age, result, risk_score, created_at) VALUES (?, ?, ?, ?, ?)",
-                  (st.session_state.user_id, age, result_text, float(probability), str(datetime.datetime.now())))
+    result_text = "Heart Disease" if prediction==1 else "No Heart Disease"
+
+    st.success(f"Prediction: {result_text}")
+    st.info(f"Risk Score: {probability:.2f}")
+
+    # Save to database
+    c.execute("INSERT INTO history (age, result, risk) VALUES (?, ?, ?)",
+              (age, result_text, probability))
+    conn.commit()
+
+    # PDF Report
+    buffer = io.BytesIO()
+    doc = SimpleDocTemplate(buffer, pagesize=A4)
+    elements = []
+    styles = getSampleStyleSheet()
+
+    elements.append(Paragraph("<b>Heart Disease Prediction Report</b>", styles["Title"]))
+    elements.append(Spacer(1, 0.5 * inch))
+    elements.append(Paragraph(f"Age: {age}", styles["Normal"]))
+    elements.append(Paragraph(f"Result: {result_text}", styles["Normal"]))
+    elements.append(Paragraph(f"Risk Score: {probability:.2f}", styles["Normal"]))
+
+    doc.build(elements)
+    buffer.seek(0)
+
+    st.download_button(
+        "Download PDF Report",
+        buffer,
+        "prediction_report.pdf",
+        "application/pdf"
+    )
+
+# =====================================================
+# GRAPH
+# =====================================================
+
+st.subheader("Prediction Trend")
+
+data = pd.read_sql_query("SELECT * FROM history", conn)
+
+if not data.empty:
+    fig, ax = plt.subplots()
+    ax.plot(data["risk"], marker="o")
+    ax.set_ylim(0,1)
+    ax.set_xlabel("Prediction Number")
+    ax.set_ylabel("Risk Score")
+    st.pyplot(fig)
+else:
+    st.info("No predictions yet.")
+
+# =====================================================
+# BULK CSV PREDICTION
+# =====================================================
+
+st.header("Bulk Prediction (CSV)")
+
+uploaded_file = st.file_uploader("Upload CSV", type=["csv"])
+
+if uploaded_file:
+    df = pd.read_csv(uploaded_file)
+    df.columns = df.columns.str.strip().str.lower()
+
+    expected = [
+        "age","sex","cp","trestbps","chol","fbs",
+        "restecg","thalach","exang","oldpeak",
+        "slope","ca","thal"
+    ]
+
+    try:
+        df = df[expected]
+        df = df.fillna(df.median(numeric_only=True))
+
+        df["sex"] = df["sex"].replace({"Male":1,"Female":0})
+        df["fbs"] = df["fbs"].replace({"Yes":1,"No":0})
+        df["exang"] = df["exang"].replace({"Yes":1,"No":0})
+
+        scaled = scaler.transform(df)
+        preds = model.predict(scaled)
+        probs = model.predict_proba(scaled)[:,1]
+
+        df["Prediction"] = preds
+        df["Risk Score"] = probs
+
+        st.success("Bulk Prediction Completed")
+        st.write(df)
+
+        st.download_button(
+            "Download Results CSV",
+            df.to_csv(index=False),
+            "bulk_results.csv",
+            "text/csv"
+        )
+
+    except:
+        st.error("CSV format incorrect.")
+
+# =====================================================
+# HISTORY TABLE
+# =====================================================
+
+st.subheader("Prediction History Table")
+st.dataframe(data)
+
+# =====================================================
+# CLEAR & LOGOUT
+# =====================================================
+
+col1, col2 = st.columns(2)
+
+with col1:
+    if st.button("Clear History"):
+        c.execute("DELETE FROM history")
         conn.commit()
+        st.success("History Cleared")
+        st.rerun()
 
-# ---------------- DASHBOARD ---------------- #
-elif menu == "Dashboard":
-    st.title("📊 Analytics Dashboard")
-
-    if st.session_state.role == "admin":
-        df = pd.read_sql_query("SELECT * FROM history", conn)
-    else:
-        df = pd.read_sql_query("SELECT * FROM history WHERE user_id=?",
-                               conn, params=(st.session_state.user_id,))
-
-    if not df.empty:
-        st.dataframe(df)
-
-        st.subheader("Risk Trend")
-        fig, ax = plt.subplots()
-        ax.plot(df["risk_score"])
-        ax.set_ylim(0,1)
-        st.pyplot(fig)
-
-        st.metric("Total Predictions", len(df))
-    else:
-        st.info("No data available.")
-
-# ---------------- LOGOUT ---------------- #
-elif menu == "Logout":
-    st.session_state.logged_in = False
-    st.session_state.user_id = None
-    st.session_state.role = None
-    st.session_state.username = None
-    st.rerun()
+with col2:
+    if st.button("Logout"):
+        st.session_state["logged_in"] = False
+        st.rerun()
