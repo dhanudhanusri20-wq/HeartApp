@@ -3,9 +3,9 @@ import joblib
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
-import sqlite3
 import base64
 import io
+import sqlite3
 
 from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer
 from reportlab.lib.styles import getSampleStyleSheet
@@ -18,6 +18,20 @@ st.set_page_config(
     page_icon="logo.png",
     layout="centered"
 )
+
+# ---------------- DATABASE ---------------- #
+conn = sqlite3.connect("predictions.db", check_same_thread=False)
+cursor = conn.cursor()
+
+cursor.execute("""
+CREATE TABLE IF NOT EXISTS history (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    age INTEGER,
+    result TEXT,
+    risk_score REAL
+)
+""")
+conn.commit()
 
 # ---------------- BACKGROUND ---------------- #
 def set_bg(image_file):
@@ -40,20 +54,6 @@ def set_bg(image_file):
         pass
 
 set_bg("bg.jpg")
-
-# ---------------- DATABASE ---------------- #
-conn = sqlite3.connect("heartapp.db", check_same_thread=False)
-cursor = conn.cursor()
-
-cursor.execute("""
-CREATE TABLE IF NOT EXISTS history (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    age INTEGER,
-    result TEXT,
-    risk_score REAL
-)
-""")
-conn.commit()
 
 # ---------------- SESSION ---------------- #
 if "logged_in" not in st.session_state:
@@ -80,13 +80,12 @@ if not st.session_state["logged_in"]:
 model = joblib.load("heart_model.pkl")
 scaler = joblib.load("scaler.pkl")
 
-# ---------------- TITLE ---------------- #
 st.title("🫀 Heart Disease Risk Prediction System")
 st.caption("AI-Based Clinical Decision Support Prototype")
 
-# ======================================================
-# 🔹 SINGLE PATIENT PREDICTION
-# ======================================================
+# =====================================================
+# SINGLE PREDICTION
+# =====================================================
 
 st.header("Single Patient Prediction")
 
@@ -104,14 +103,14 @@ slope = st.selectbox("Slope (0-2)", [0,1,2])
 ca = st.selectbox("Major Vessels (0-3)", [0,1,2,3])
 thal = st.selectbox("Thal (1-3)", [1,2,3])
 
-sex = 1 if sex=="Male" else 0
-fbs = 1 if fbs=="Yes" else 0
-exang = 1 if exang=="Yes" else 0
+sex_val = 1 if sex=="Male" else 0
+fbs_val = 1 if fbs=="Yes" else 0
+exang_val = 1 if exang=="Yes" else 0
 
 if st.button("Predict"):
 
-    input_data = np.array([[age, sex, cp, trestbps, chol, fbs,
-                            restecg, thalach, exang, oldpeak,
+    input_data = np.array([[age, sex_val, cp, trestbps, chol, fbs_val,
+                            restecg, thalach, exang_val, oldpeak,
                             slope, ca, thal]])
 
     input_scaled = scaler.transform(input_data)
@@ -127,14 +126,46 @@ if st.button("Predict"):
     st.success(f"Prediction: {result_text}")
     st.info(f"Risk Score: {probability:.2f} → {risk}")
 
-    # Save to Database
+    # Save to database
     cursor.execute(
         "INSERT INTO history (age, result, risk_score) VALUES (?, ?, ?)",
-        (age, result_text, float(probability))
+        (age, result_text, probability)
     )
     conn.commit()
 
-    # -------- PDF -------- #
+    # ---------------- AI EXPLANATION ---------------- #
+    explanation = []
+
+    if age > 60:
+        explanation.append("Advanced age increases cardiovascular risk.")
+
+    if chol > 240:
+        explanation.append("High cholesterol level significantly raises heart disease risk.")
+
+    if trestbps > 140:
+        explanation.append("Elevated resting blood pressure is a major risk factor.")
+
+    if exang_val == 1:
+        explanation.append("Exercise induced angina indicates cardiac stress.")
+
+    if oldpeak > 2:
+        explanation.append("High ST depression suggests abnormal heart function.")
+
+    if cp == 3:
+        explanation.append("Asymptomatic chest pain type is associated with higher risk.")
+
+    if probability < 0.3:
+        explanation.append("Overall risk is low based on current clinical inputs.")
+    elif probability < 0.7:
+        explanation.append("Moderate risk detected. Lifestyle modification recommended.")
+    else:
+        explanation.append("High cardiovascular risk detected. Medical consultation advised.")
+
+    st.subheader("AI Clinical Explanation")
+    for point in explanation:
+        st.write("•", point)
+
+    # ---------------- PDF REPORT ---------------- #
     buffer = io.BytesIO()
     doc = SimpleDocTemplate(buffer, pagesize=A4)
     elements = []
@@ -156,21 +187,17 @@ if st.button("Predict"):
         mime="application/pdf"
     )
 
-# ======================================================
-# 📊 GRAPH + HISTORY
-# ======================================================
+# =====================================================
+# GRAPH FROM DATABASE
+# =====================================================
 
-st.subheader("Prediction History")
-
-data = pd.read_sql_query("SELECT * FROM history ORDER BY id DESC", conn)
-st.dataframe(data)
+data = pd.read_sql_query("SELECT * FROM history ORDER BY id ASC", conn)
 
 if not data.empty:
-
     st.subheader("Risk Score Trend")
 
     fig, ax = plt.subplots()
-    ax.plot(data["risk_score"][::-1], marker='o')
+    ax.plot(data["risk_score"], marker='o')
     ax.set_xlabel("Prediction Number")
     ax.set_ylabel("Risk Score")
     ax.set_ylim(0,1)
@@ -178,12 +205,9 @@ if not data.empty:
 
     st.pyplot(fig)
 
-else:
-    st.info("No prediction data available.")
-
-# ======================================================
-# 📂 BULK CSV PREDICTION
-# ======================================================
+# =====================================================
+# BULK CSV PREDICTION
+# =====================================================
 
 st.header("Bulk Prediction (CSV Upload)")
 
@@ -215,7 +239,7 @@ if uploaded_file:
         df["Risk Score"] = probs
 
         st.success("Bulk Prediction Completed")
-        st.write(df)
+        st.dataframe(df)
 
         csv = df.to_csv(index=False).encode()
 
@@ -229,9 +253,16 @@ if uploaded_file:
     except:
         st.error("CSV format incorrect. Check column names.")
 
-# ======================================================
-# CLEAR + LOGOUT
-# ======================================================
+# =====================================================
+# HISTORY TABLE
+# =====================================================
+
+st.subheader("Prediction History")
+st.dataframe(data)
+
+# =====================================================
+# CLEAR & LOGOUT
+# =====================================================
 
 col1, col2 = st.columns(2)
 
