@@ -56,23 +56,27 @@ c.execute('''CREATE TABLE IF NOT EXISTS history (
 conn.commit()
 
 # ---------------- LOGIN ---------------- #
-def hash_password(password):
-    return hashlib.sha256(password.encode()).hexdigest()
-
 def login_page():
     st.title("🔐 Heart Disease Prediction - Login")
     username = st.text_input("Username")
     password = st.text_input("Password", type="password")
+    
+    login_success = False
     if st.button("Login"):
         if username=="admin" and hash_password(password)==hash_password("1234"):
             st.session_state["logged_in"] = True
-            st.experimental_rerun()
+            login_success = True
         else:
             st.error("Invalid Credentials")
+    return login_success
 
-if not st.session_state["logged_in"]:
-    login_page()
+# ---------------- MAIN LOGIN CHECK ---------------- #
+if not st.session_state.get("logged_in", False):
+    success = login_page()
+    if success:
+        st.experimental_rerun()  # <-- Rerun only in main scope, not inside function
     st.stop()
+
 
 # ---------------- SIDEBAR NAV ---------------- #
 st.sidebar.image("logo.png", width=150)
@@ -229,3 +233,4 @@ if st.session_state["page"]=="Logout":
     st.session_state["logged_in"] = False
     st.session_state["page"] = "Home"
     st.experimental_rerun()
+
