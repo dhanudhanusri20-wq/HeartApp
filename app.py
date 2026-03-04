@@ -1,105 +1,84 @@
 import streamlit as st
-import sqlite3
 import joblib
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 import base64
 import io
-from datetime import datetime
+import sqlite3
 from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer
 from reportlab.lib.styles import getSampleStyleSheet
 from reportlab.lib.pagesizes import A4
 from reportlab.lib.units import inch
+import hashlib
 
 # ---------------- PAGE CONFIG ---------------- #
 st.set_page_config(
-    page_title="AI Heart Disease Prediction",
-    page_icon="logo.png",
-    layout="wide"
+    page_title="Heart Disease Prediction",
+    page_icon="logo.png",  # Browser tab icon
+    layout="centered"
 )
 
 # ---------------- BACKGROUND ---------------- #
 def set_bg(image_file):
     try:
         with open(image_file, "rb") as f:
-            encoded = base64.b64encode(f.read()).decode()
-        st.markdown(f"""
+            data = f.read()
+        encoded = base64.b64encode(data).decode()
+        page_bg_img = f"""
         <style>
         .stApp {{
-            background-image: url("data:image/jpeg;base64,{encoded}");
-            background-size: cover;
-            background-position: center;
+           background-image: url("data:image/jpeg;base64,{encoded}");
+           background-size: cover;
+           background-position: center;
         }}
         </style>
-        """, unsafe_allow_html=True)
+        """
+        st.markdown(page_bg_img, unsafe_allow_html=True)
     except:
         pass
 
 set_bg("bg.jpg")
 
-# ---------------- CARD STYLE ---------------- #
-st.markdown("""
-<style>
-.card {
-    background-color: white;
-    padding: 20px;
-    border-radius: 12px;
-    box-shadow: 0px 4px 15px rgba(0,0,0,0.1);
-    text-align: center;
-    transition: transform 0.2s ease, box-shadow 0.2s ease;
-}
-.card:hover {
-    transform: translateY(-5px);
-    box-shadow: 0px 8px 20px rgba(0,0,0,0.15);
-}
-.card h2 {
-    margin: 0;
-    font-size: 28px;
-}
-.card p {
-    margin: 5px 0 0 0;
-    font-size: 15px;
-    color: gray;
-}
-</style>
-""", unsafe_allow_html=True)
+# ---------------- SESSION INIT ---------------- #
+if "logged_in" not in st.session_state:
+    st.session_state["logged_in"] = False
 
-# ---------------- DATABASE ---------------- #
-conn = sqlite3.connect("predictions.db")
-cursor = conn.cursor()
-cursor.execute("""
+if "history" not in st.session_state:
+    st.session_state["history"] = []
+
+# ---------------- DATABASE SETUP ---------------- #
+conn = sqlite3.connect("predictions.db", check_same_thread=False)
+c = conn.cursor()
+c.execute('''
 CREATE TABLE IF NOT EXISTS history (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     patient_id TEXT,
     patient_name TEXT,
-    age INTEGER,
-    gender TEXT,
-    result TEXT,
-    risk_score REAL,
-    created_at TEXT
+    prediction TEXT,
+    risk_score REAL
 )
-""")
+''')
 conn.commit()
-conn.close()
 
 # ---------------- LOGIN ---------------- #
-if "logged_in" not in st.session_state:
-    st.session_state.logged_in = False
+def hash_password(password):
+    return hashlib.sha256(password.encode()).hexdigest()
 
 def login():
-    st.title("🔐 AI Clinical Login")
-    user = st.text_input("Username")
-    pwd = st.text_input("Password", type="password")
+    st.title("🔐 Heart Disease Prediction - Login")
+    username = st.text_input("Username")
+    password = st.text_input("Password", type="password")
 
     if st.button("Login"):
-        if user == "admin" and pwd == "1234":
-            st.session_state.logged_in = True
+        # Hardcoded username & hashed password for demo
+        if username == "admin" and hash_password(password) == hash_password("1234"):
+            st.session_state["logged_in"] = True
             st.rerun()
         else:
             st.error("Invalid Credentials")
 
-if not st.session_state.logged_in:
+if not st.session_state["logged_in"]:
     login()
     st.stop()
 
@@ -107,185 +86,143 @@ if not st.session_state.logged_in:
 model = joblib.load("heart_model.pkl")
 scaler = joblib.load("scaler.pkl")
 
-# ---------------- SIDEBAR ---------------- #
-menu = st.sidebar.radio(
-    "Navigation",
-    ["Home", "Single Prediction", "Bulk Prediction", "Doctor Dashboard", "Logout"]
-)
+# ---------------- TITLE ---------------- #
+st.image("logo.png", width=200)  # Top logo inside app
+st.title("🫀 Heart Disease Risk Prediction System")
+st.caption("AI-Based Clinical Decision Support Prototype")
 
-# ---------------- HOME ---------------- #
-if menu == "Home":
-    st.title("🫀 AI Powered Heart Disease Prediction System")
-    st.write("Advanced Clinical Decision Support using Machine Learning")
+# ======================================================
+# SINGLE PATIENT PREDICTION
+# ======================================================
+st.header("Single Patient Prediction")
 
-# ---------------- SINGLE PREDICTION ---------------- #
-elif menu == "Single Prediction":
+patient_id = st.text_input("Patient ID")
+patient_name = st.text_input("Patient Name")
 
-    st.header("Single Patient AI Prediction")
+age = st.number_input("Age", 20, 100, 50)
+sex = st.selectbox("Sex", ["Male", "Female"])
+cp = st.selectbox("Chest Pain Type (0-3)", [0,1,2,3])
+trestbps = st.number_input("Resting BP", 80, 200, 120)
+chol = st.number_input("Cholesterol", 100, 400, 200)
+fbs = st.selectbox("Fasting Blood Sugar > 120 mg/dl", ["Yes", "No"])
+restecg = st.selectbox("Rest ECG (0-2)", [0,1,2])
+thalach = st.number_input("Max Heart Rate", 60, 220, 150)
+exang = st.selectbox("Exercise Induced Angina", ["Yes", "No"])
+oldpeak = st.number_input("ST Depression", 0.0, 10.0, 1.0)
+slope = st.selectbox("Slope (0-2)", [0,1,2])
+ca = st.selectbox("Major Vessels (0-3)", [0,1,2,3])
+thal = st.selectbox("Thal (1-3)", [1,2,3])
 
-    patient_id = st.text_input("Patient ID")
-    patient_name = st.text_input("Patient Name")
+sex = 1 if sex=="Male" else 0
+fbs = 1 if fbs=="Yes" else 0
+exang = 1 if exang=="Yes" else 0
 
-    age = st.number_input("Age", 20, 100, 50)
-    gender = st.selectbox("Gender", ["Male", "Female"])
-    sex = 1 if gender == "Male" else 0
+if st.button("Predict"):
+    input_data = np.array([[age, sex, cp, trestbps, chol, fbs,
+                            restecg, thalach, exang, oldpeak,
+                            slope, ca, thal]])
+    input_scaled = scaler.transform(input_data)
+    prediction = model.predict(input_scaled)[0]
+    probability = model.predict_proba(input_scaled)[0][1]
 
-    cp = st.selectbox("Chest Pain Type", [0,1,2,3])
-    trestbps = st.number_input("Resting BP", 80, 200, 120)
-    chol = st.number_input("Cholesterol", 100, 400, 200)
-    fbs = st.selectbox("FBS >120", ["Yes", "No"])
-    fbs = 1 if fbs == "Yes" else 0
-    restecg = st.selectbox("Rest ECG", [0,1,2])
-    thalach = st.number_input("Max HR", 60, 220, 150)
-    exang = st.selectbox("Exercise Angina", ["Yes", "No"])
-    exang = 1 if exang == "Yes" else 0
-    oldpeak = st.number_input("Oldpeak", 0.0, 10.0, 1.0)
-    slope = st.selectbox("Slope", [0,1,2])
-    ca = st.selectbox("Major Vessels", [0,1,2,3])
-    thal = st.selectbox("Thal", [1,2,3])
+    risk = "Low Risk" if probability < 0.3 else \
+           "Medium Risk" if probability < 0.7 else \
+           "High Risk"
+    result_text = "Heart Disease" if prediction==1 else "No Heart Disease"
 
-    if st.button("Predict"):
+    st.success(f"Prediction: {result_text}")
+    st.info(f"Risk Score: {probability:.2f} → {risk}")
 
-        data = np.array([[age, sex, cp, trestbps, chol, fbs,
-                          restecg, thalach, exang, oldpeak,
-                          slope, ca, thal]])
+    st.session_state["history"].append(probability)
 
-        scaled = scaler.transform(data)
-        prediction = model.predict(scaled)[0]
-        prob = model.predict_proba(scaled)[0][1]
-
-        result = "Heart Disease" if prediction == 1 else "No Heart Disease"
-
-        # ---------------- AI RESULT DISPLAY ---------------- #
-        if prob >= 0.7:
-            st.error(f"🔴 {result} (High Risk)")
-        elif prob >= 0.3:
-            st.warning(f"🟡 {result} (Medium Risk)")
-        else:
-            st.success(f"🟢 {result} (Low Risk)")
-
-        st.markdown(f"### 🧠 AI Confidence Score: {prob:.2f}")
-        st.progress(int(prob * 100))
-
-        # ---------------- AI EXPLANATION ---------------- #
-        st.markdown("### 🤖 AI Explanation")
-        reasons = []
-
-        if age > 60:
-            reasons.append("Age above 60 increases cardiovascular risk.")
-        if chol > 240:
-            reasons.append("High cholesterol level detected.")
-        if trestbps > 140:
-            reasons.append("Elevated resting blood pressure.")
-        if exang == 1:
-            reasons.append("Exercise induced angina present.")
-        if oldpeak > 2:
-            reasons.append("Significant ST depression observed.")
-
-        if reasons:
-            for r in reasons:
-                st.write("•", r)
-        else:
-            st.write("No major abnormal indicators detected.")
-
-        # ---------------- SAVE TO DATABASE ---------------- #
-        conn = sqlite3.connect("predictions.db")
-        cursor = conn.cursor()
-        cursor.execute("""
-        INSERT INTO history (patient_id, patient_name, age, gender, result, risk_score, created_at)
-        VALUES (?, ?, ?, ?, ?, ?, ?)
-        """, (patient_id, patient_name, age, gender, result, prob, datetime.now()))
+    # Save to SQLite
+    if patient_id and patient_name:
+        c.execute("INSERT INTO history (patient_id, patient_name, prediction, risk_score) VALUES (?, ?, ?, ?)",
+                  (patient_id, patient_name, result_text, probability))
         conn.commit()
-        conn.close()
 
-        # ---------------- PDF ---------------- #
-        buffer = io.BytesIO()
-        doc = SimpleDocTemplate(buffer, pagesize=A4)
-        elements = []
-        styles = getSampleStyleSheet()
+    # PDF Report
+    buffer = io.BytesIO()
+    doc = SimpleDocTemplate(buffer, pagesize=A4)
+    elements = []
+    styles = getSampleStyleSheet()
+    elements.append(Paragraph("<b>Heart Disease Prediction Report</b>", styles["Title"]))
+    elements.append(Spacer(1, 0.5*inch))
+    elements.append(Paragraph(f"Patient ID: {patient_id}", styles["Normal"]))
+    elements.append(Paragraph(f"Patient Name: {patient_name}", styles["Normal"]))
+    elements.append(Paragraph(f"Age: {age}", styles["Normal"]))
+    elements.append(Paragraph(f"Result: {result_text}", styles["Normal"]))
+    elements.append(Paragraph(f"Risk Score: {probability:.2f}", styles["Normal"]))
+    doc.build(elements)
+    buffer.seek(0)
+    st.download_button("Download Prediction Report (PDF)", data=buffer, file_name="prediction_report.pdf", mime="application/pdf")
 
-        elements.append(Paragraph("<b>AI Heart Disease Prediction Report</b>", styles["Title"]))
-        elements.append(Spacer(1, 0.5 * inch))
-        elements.append(Paragraph(f"Patient ID: {patient_id}", styles["Normal"]))
-        elements.append(Paragraph(f"Name: {patient_name}", styles["Normal"]))
-        elements.append(Paragraph(f"Result: {result}", styles["Normal"]))
-        elements.append(Paragraph(f"Confidence Score: {prob:.2f}", styles["Normal"]))
+# ======================================================
+# GRAPH
+# ======================================================
+if len(st.session_state["history"]) > 0:
+    st.subheader("Risk Score Trend")
+    fig, ax = plt.subplots()
+    ax.plot(range(1, len(st.session_state["history"])+1), st.session_state["history"], marker='o')
+    ax.set_xlabel("Prediction Number")
+    ax.set_ylabel("Risk Score")
+    ax.set_ylim(0,1)
+    ax.grid(True)
+    st.pyplot(fig)
+else:
+    st.info("No predictions yet.")
 
-        doc.build(elements)
-        buffer.seek(0)
+# ======================================================
+# CSV BULK PREDICTION
+# ======================================================
+st.header("Bulk Prediction (CSV Upload)")
+uploaded_file = st.file_uploader("Upload CSV File", type=["csv"])
 
-        st.download_button(
-            "Download PDF Report",
-            buffer,
-            "prediction_report.pdf",
-            "application/pdf"
-        )
+if uploaded_file:
+    df = pd.read_csv(uploaded_file)
+    df.columns = df.columns.str.strip().str.lower()
+    expected_columns = ["age","sex","cp","trestbps","chol","fbs","restecg","thalach","exang","oldpeak","slope","ca","thal"]
+    try:
+        df = df[expected_columns]
+        df = df.fillna(df.median(numeric_only=True))
+        df["sex"] = df["sex"].replace({"Male":1,"Female":0})
+        df["fbs"] = df["fbs"].replace({"Yes":1,"No":0})
+        df["exang"] = df["exang"].replace({"Yes":1,"No":0})
 
-# ---------------- BULK PREDICTION ---------------- #
-elif menu == "Bulk Prediction":
-
-    st.header("Bulk AI Prediction")
-
-    file = st.file_uploader("Upload CSV", type=["csv"])
-
-    if file:
-        df = pd.read_csv(file)
-
-        expected = ["age","sex","cp","trestbps","chol","fbs",
-                    "restecg","thalach","exang","oldpeak",
-                    "slope","ca","thal"]
-
-        df = df[expected]
         scaled = scaler.transform(df)
-
         preds = model.predict(scaled)
         probs = model.predict_proba(scaled)[:,1]
-
         df["Prediction"] = preds
         df["Risk Score"] = probs
 
+        st.success("Bulk Prediction Completed ✅")
         st.write(df)
 
         csv = df.to_csv(index=False).encode()
-        st.download_button("Download Results CSV", csv,
-                           "bulk_prediction_results.csv", "text/csv")
+        st.download_button("Download Results CSV", csv, "bulk_prediction_results.csv", "text/csv")
 
-# ---------------- DOCTOR DASHBOARD ---------------- #
-elif menu == "Doctor Dashboard":
+    except:
+        st.error("CSV format incorrect. Check column names.")
 
-    st.header("Doctor Dashboard")
+# ======================================================
+# HISTORY (SQLite)
+# ======================================================
+st.subheader("Prediction History (Database)")
+history_df = pd.read_sql_query("SELECT * FROM history", conn)
+st.write(history_df)
 
-    conn = sqlite3.connect("predictions.db")
-    df = pd.read_sql_query("SELECT * FROM history", conn)
-    conn.close()
-
-    if not df.empty:
-
-        total = len(df)
-        high = len(df[df["risk_score"] >= 0.7])
-        medium = len(df[(df["risk_score"] >= 0.3) & (df["risk_score"] < 0.7)])
-        low = len(df[df["risk_score"] < 0.3])
-
-        col1, col2, col3, col4 = st.columns(4)
-
-        col1.markdown(f"<div class='card'><h2>{total}</h2><p>Total Patients</p></div>", unsafe_allow_html=True)
-        col2.markdown(f"<div class='card'><h2>{high}</h2><p>High Risk</p></div>", unsafe_allow_html=True)
-        col3.markdown(f"<div class='card'><h2>{medium}</h2><p>Medium Risk</p></div>", unsafe_allow_html=True)
-        col4.markdown(f"<div class='card'><h2>{low}</h2><p>Low Risk</p></div>", unsafe_allow_html=True)
-
-        st.markdown("### Risk Distribution")
-        fig, ax = plt.subplots()
-        ax.pie([high, medium, low],
-               labels=["High","Medium","Low"],
-               autopct="%1.1f%%")
-        st.pyplot(fig)
-
-        st.dataframe(df)
-
-    else:
-        st.info("No records found")
-
-# ---------------- LOGOUT ---------------- #
-elif menu == "Logout":
-    st.session_state.logged_in = False
-    st.rerun()
+# ======================================================
+# CLEAR & LOGOUT
+# ======================================================
+col1, col2 = st.columns(2)
+with col1:
+    if st.button("Clear History"):
+        c.execute("DELETE FROM history")
+        conn.commit()
+        st.session_state["history"] = []
+        st.success("History Cleared")
+        st.rerun()
+with col2:
+    if st.button("Logout"):
+        st.session_state["logged_in"] = False
+        st.rerun()
