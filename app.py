@@ -67,17 +67,23 @@ def login_page():
     st.title("🔐 Heart Disease Prediction - Login")
     username = st.text_input("Username")
     password = st.text_input("Password", type="password")
+    
     if st.button("Login"):
         if username == "admin" and hash_password(password) == hash_password("1234"):
             st.session_state["logged_in"] = True
             st.session_state["page"] = "Home"
-            st.experimental_rerun()
+            return True  # Login successful
         else:
             st.error("Invalid Credentials")
+            return False
 
+# Check login
 if not st.session_state["logged_in"]:
-    login_page()
-    st.stop()
+    if login_page():
+        st.experimental_rerun()
+    else:
+        st.stop()
+
 
 # ---------------- NAVIGATION ---------------- #
 st.sidebar.image("logo.png", width=150)
@@ -240,3 +246,4 @@ if st.session_state["page"] == "Logout":
     st.session_state["logged_in"] = False
     st.session_state["page"] = "Home"
     st.experimental_rerun()
+
