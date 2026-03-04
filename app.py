@@ -25,10 +25,12 @@ cursor = conn.cursor()
 
 cursor.execute("""
 CREATE TABLE IF NOT EXISTS history (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    age INTEGER,
-    result TEXT,
-    risk_score REAL
+   id INTEGER PRIMARY KEY,
+age INTEGER,
+result TEXT,
+risk_score REAL,
+timestamp TEXT
+
 )
 """)
 conn.commit()
@@ -277,3 +279,4 @@ with col2:
     if st.button("Logout"):
         st.session_state["logged_in"] = False
         st.rerun()
+
