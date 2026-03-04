@@ -13,9 +13,11 @@ from reportlab.lib.units import inch
 import hashlib
 
 # ---------------- PAGE CONFIG ---------------- #
-st.set_page_config(page_title="Heart Disease Prediction",
-                   page_icon="logo.png",
-                   layout="centered")
+st.set_page_config(
+    page_title="Heart Disease Prediction",
+    page_icon="logo.png",
+    layout="centered"
+)
 
 # ---------------- BACKGROUND ---------------- #
 def set_bg(image_file):
@@ -36,7 +38,7 @@ def set_bg(image_file):
         pass
 set_bg("bg.jpg")
 
-# ---------------- SESSION ---------------- #
+# ---------------- SESSION INIT ---------------- #
 if "logged_in" not in st.session_state: st.session_state["logged_in"] = False
 if "page" not in st.session_state: st.session_state["page"] = "Home"
 if "history" not in st.session_state: st.session_state["history"] = []
@@ -53,32 +55,27 @@ c.execute('''CREATE TABLE IF NOT EXISTS history (
 )''')
 conn.commit()
 
-# ---------------- PASSWORD HASH ---------------- #
+# ---------------- LOGIN ---------------- #
 def hash_password(password):
     return hashlib.sha256(password.encode()).hexdigest()
 
-# ---------------- LOGIN ---------------- #
 def login_page():
     st.title("🔐 Heart Disease Prediction - Login")
     username = st.text_input("Username")
     password = st.text_input("Password", type="password")
-    login_success = False
     if st.button("Login"):
         if username=="admin" and hash_password(password)==hash_password("1234"):
             st.session_state["logged_in"] = True
-            login_success = True
+            st.success("Login Successful ✅")
         else:
             st.error("Invalid Credentials")
-    return login_success
 
 # ---------------- LOGIN CHECK ---------------- #
-if not st.session_state.get("logged_in", False):
-    success = login_page()
-    if success:
-        st.experimental_rerun()
-    st.stop()
+if not st.session_state["logged_in"]:
+    login_page()
+    st.stop()  # Stop everything until login is done
 
-# ---------------- SIDEBAR ---------------- #
+# ---------------- SIDEBAR NAVIGATION ---------------- #
 st.sidebar.image("logo.png", width=150)
 st.session_state["page"] = st.sidebar.radio("Navigation", ["Home","Single Prediction","Bulk Prediction","Doctor Dashboard","Logout"])
 
@@ -95,7 +92,7 @@ def ai_advice(risk_score):
     else:
         return "Immediate medical attention recommended."
 
-# ---------------- PDF ---------------- #
+# ---------------- PDF GENERATION ---------------- #
 def generate_pdf(patient_id, patient_name, age, result_text, risk_score):
     buffer = io.BytesIO()
     doc = SimpleDocTemplate(buffer, pagesize=A4)
@@ -113,12 +110,12 @@ def generate_pdf(patient_id, patient_name, age, result_text, risk_score):
     buffer.seek(0)
     return buffer
 
-# ---------------- HOME ---------------- #
+# ---------------- HOME PAGE ---------------- #
 if st.session_state["page"]=="Home":
     st.title("🏠 Welcome to Heart Disease Prediction System")
     st.write("Use the sidebar to navigate: Single Prediction, Bulk Prediction, Doctor Dashboard, or Logout.")
 
-# ---------------- SINGLE PREDICTION ---------------- #
+# ---------------- SINGLE PATIENT ---------------- #
 if st.session_state["page"]=="Single Prediction":
     st.header("Single Patient Prediction")
     patient_id = st.text_input("Patient ID")
@@ -128,7 +125,7 @@ if st.session_state["page"]=="Single Prediction":
     cp = st.selectbox("Chest Pain Type (0-3)",[0,1,2,3])
     trestbps = st.number_input("Resting BP",80,200,120)
     chol = st.number_input("Cholesterol",100,400,200)
-    fbs = st.selectbox("Fasting Blood Sugar >120 mg/dl",["Yes","No"])
+    fbs = st.selectbox("Fasting Blood Sugar > 120 mg/dl",["Yes","No"])
     restecg = st.selectbox("Rest ECG (0-2)",[0,1,2])
     thalach = st.number_input("Max Heart Rate",60,220,150)
     exang = st.selectbox("Exercise Induced Angina",["Yes","No"])
@@ -153,20 +150,20 @@ if st.session_state["page"]=="Single Prediction":
         st.info(f"Risk Score: {probability:.2f} → {risk}")
         st.info(f"AI Advice: {ai_advice(probability)}")
 
-        # Save to DB & session
+        # Save to session & DB
         st.session_state["history"].append(probability)
         if patient_id and patient_name:
             c.execute("INSERT INTO history (patient_id,patient_name,prediction,risk_score) VALUES (?,?,?,?)",
                       (patient_id,patient_name,result_text,probability))
             conn.commit()
 
-        # PDF download
-        pdf_buffer = generate_pdf(patient_id,patient_name,age,result_text,probability)
+        # PDF
+        pdf_buffer = generate_pdf(patient_id, patient_name, age, result_text, probability)
         st.download_button("Download PDF Report",pdf_buffer,f"{patient_name}_report.pdf","application/pdf")
 
         # Graph
         if len(st.session_state["history"])>0:
-            fig,ax=plt.subplots()
+            fig, ax = plt.subplots()
             ax.plot(range(1,len(st.session_state["history"])+1),st.session_state["history"],marker='o')
             ax.set_xlabel("Prediction Number")
             ax.set_ylabel("Risk Score")
@@ -196,7 +193,7 @@ if st.session_state["page"]=="Bulk Prediction":
             df["Risk Score"] = probs
             df["AI Advice"] = df["Risk Score"].apply(ai_advice)
 
-            # Save all to DB
+            # Save to DB
             for idx,row in df.iterrows():
                 c.execute("INSERT INTO history (patient_id,patient_name,prediction,risk_score) VALUES (?,?,?,?)",
                           (row["patient_id"],row["patient_name"],row["Prediction"],row["Risk Score"]))
@@ -214,10 +211,10 @@ if st.session_state["page"]=="Doctor Dashboard":
     history_df = pd.read_sql_query("SELECT * FROM history", conn)
     st.write(history_df)
     if not history_df.empty:
-        fig,ax=plt.subplots()
+        fig, ax = plt.subplots()
         for pid in history_df["patient_id"].unique():
             patient_data = history_df[history_df["patient_id"]==pid]
-            ax.plot(patient_data.index,patient_data["risk_score"],marker='o',label=pid)
+            ax.plot(patient_data.index, patient_data["risk_score"], marker='o', label=pid)
         ax.set_xlabel("Record Number")
         ax.set_ylabel("Risk Score")
         ax.set_ylim(0,1)
@@ -230,6 +227,7 @@ if st.session_state["page"]=="Doctor Dashboard":
 
 # ---------------- LOGOUT ---------------- #
 if st.session_state["page"]=="Logout":
-    st.session_state["logged_in"]=False
-    st.session_state["page"]="Home"
-    st.experimental_rerun()
+    st.session_state["logged_in"] = False
+    st.session_state["page"] = "Home"
+    st.success("Logged out successfully ✅")
+    st.stop()
