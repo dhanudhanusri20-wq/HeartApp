@@ -14,7 +14,7 @@ from reportlab.lib.units import inch
 
 # ---------------- PAGE CONFIG ---------------- #
 st.set_page_config(
-    page_title="Heart Disease Prediction",
+    page_title="AI Heart Disease Prediction",
     page_icon="logo.png",
     layout="wide"
 )
@@ -38,7 +38,7 @@ def set_bg(image_file):
 
 set_bg("bg.jpg")
 
-# ---------------- CARD STYLE (Animated Cards) ---------------- #
+# ---------------- CARD STYLE ---------------- #
 st.markdown("""
 <style>
 .card {
@@ -55,17 +55,17 @@ st.markdown("""
 }
 .card h2 {
     margin: 0;
-    font-size: 30px;
+    font-size: 28px;
 }
 .card p {
     margin: 5px 0 0 0;
-    font-size: 16px;
+    font-size: 15px;
     color: gray;
 }
 </style>
 """, unsafe_allow_html=True)
 
-# ---------------- DATABASE INIT ---------------- #
+# ---------------- DATABASE ---------------- #
 conn = sqlite3.connect("predictions.db")
 cursor = conn.cursor()
 cursor.execute("""
@@ -83,13 +83,12 @@ CREATE TABLE IF NOT EXISTS history (
 conn.commit()
 conn.close()
 
-# ---------------- SESSION ---------------- #
+# ---------------- LOGIN ---------------- #
 if "logged_in" not in st.session_state:
     st.session_state.logged_in = False
 
-# ---------------- LOGIN ---------------- #
 def login():
-    st.title("🔐 Login")
+    st.title("🔐 AI Clinical Login")
     user = st.text_input("Username")
     pwd = st.text_input("Password", type="password")
 
@@ -116,13 +115,13 @@ menu = st.sidebar.radio(
 
 # ---------------- HOME ---------------- #
 if menu == "Home":
-    st.title("🫀 Heart Disease Risk Prediction System")
-    st.write("AI Based Clinical Decision Support System")
+    st.title("🫀 AI Powered Heart Disease Prediction System")
+    st.write("Advanced Clinical Decision Support using Machine Learning")
 
 # ---------------- SINGLE PREDICTION ---------------- #
 elif menu == "Single Prediction":
 
-    st.header("Single Patient Prediction")
+    st.header("Single Patient AI Prediction")
 
     patient_id = st.text_input("Patient ID")
     patient_name = st.text_input("Patient Name")
@@ -157,10 +156,39 @@ elif menu == "Single Prediction":
 
         result = "Heart Disease" if prediction == 1 else "No Heart Disease"
 
-        st.success(f"Prediction: {result}")
-        st.info(f"Risk Score: {prob:.2f}")
+        # ---------------- AI RESULT DISPLAY ---------------- #
+        if prob >= 0.7:
+            st.error(f"🔴 {result} (High Risk)")
+        elif prob >= 0.3:
+            st.warning(f"🟡 {result} (Medium Risk)")
+        else:
+            st.success(f"🟢 {result} (Low Risk)")
 
-        # Save to DB
+        st.markdown(f"### 🧠 AI Confidence Score: {prob:.2f}")
+        st.progress(int(prob * 100))
+
+        # ---------------- AI EXPLANATION ---------------- #
+        st.markdown("### 🤖 AI Explanation")
+        reasons = []
+
+        if age > 60:
+            reasons.append("Age above 60 increases cardiovascular risk.")
+        if chol > 240:
+            reasons.append("High cholesterol level detected.")
+        if trestbps > 140:
+            reasons.append("Elevated resting blood pressure.")
+        if exang == 1:
+            reasons.append("Exercise induced angina present.")
+        if oldpeak > 2:
+            reasons.append("Significant ST depression observed.")
+
+        if reasons:
+            for r in reasons:
+                st.write("•", r)
+        else:
+            st.write("No major abnormal indicators detected.")
+
+        # ---------------- SAVE TO DATABASE ---------------- #
         conn = sqlite3.connect("predictions.db")
         cursor = conn.cursor()
         cursor.execute("""
@@ -170,39 +198,38 @@ elif menu == "Single Prediction":
         conn.commit()
         conn.close()
 
-        # -------- PDF -------- #
+        # ---------------- PDF ---------------- #
         buffer = io.BytesIO()
         doc = SimpleDocTemplate(buffer, pagesize=A4)
         elements = []
         styles = getSampleStyleSheet()
 
-        elements.append(Paragraph("<b>Heart Disease Prediction Report</b>", styles["Title"]))
+        elements.append(Paragraph("<b>AI Heart Disease Prediction Report</b>", styles["Title"]))
         elements.append(Spacer(1, 0.5 * inch))
         elements.append(Paragraph(f"Patient ID: {patient_id}", styles["Normal"]))
         elements.append(Paragraph(f"Name: {patient_name}", styles["Normal"]))
         elements.append(Paragraph(f"Result: {result}", styles["Normal"]))
-        elements.append(Paragraph(f"Risk Score: {prob:.2f}", styles["Normal"]))
+        elements.append(Paragraph(f"Confidence Score: {prob:.2f}", styles["Normal"]))
 
         doc.build(elements)
         buffer.seek(0)
 
         st.download_button(
-            label="Download PDF Report",
-            data=buffer,
-            file_name="prediction_report.pdf",
-            mime="application/pdf"
+            "Download PDF Report",
+            buffer,
+            "prediction_report.pdf",
+            "application/pdf"
         )
 
 # ---------------- BULK PREDICTION ---------------- #
 elif menu == "Bulk Prediction":
 
-    st.header("Bulk CSV Prediction")
+    st.header("Bulk AI Prediction")
 
     file = st.file_uploader("Upload CSV", type=["csv"])
 
     if file:
         df = pd.read_csv(file)
-        st.write(df.head())
 
         expected = ["age","sex","cp","trestbps","chol","fbs",
                     "restecg","thalach","exang","oldpeak",
@@ -220,12 +247,8 @@ elif menu == "Bulk Prediction":
         st.write(df)
 
         csv = df.to_csv(index=False).encode()
-        st.download_button(
-            "Download Results CSV",
-            csv,
-            "bulk_prediction_results.csv",
-            "text/csv"
-        )
+        st.download_button("Download Results CSV", csv,
+                           "bulk_prediction_results.csv", "text/csv")
 
 # ---------------- DOCTOR DASHBOARD ---------------- #
 elif menu == "Doctor Dashboard":
@@ -251,14 +274,12 @@ elif menu == "Doctor Dashboard":
         col4.markdown(f"<div class='card'><h2>{low}</h2><p>Low Risk</p></div>", unsafe_allow_html=True)
 
         st.markdown("### Risk Distribution")
-
         fig, ax = plt.subplots()
         ax.pie([high, medium, low],
-               labels=["High", "Medium", "Low"],
+               labels=["High","Medium","Low"],
                autopct="%1.1f%%")
         st.pyplot(fig)
 
-        st.markdown("### All Records")
         st.dataframe(df)
 
     else:
