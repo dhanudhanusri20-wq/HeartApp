@@ -38,10 +38,36 @@ def set_bg(image_file):
 
 set_bg("bg.jpg")
 
+# ---------------- CARD STYLE (Animated Cards) ---------------- #
+st.markdown("""
+<style>
+.card {
+    background-color: white;
+    padding: 20px;
+    border-radius: 12px;
+    box-shadow: 0px 4px 15px rgba(0,0,0,0.1);
+    text-align: center;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+.card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0px 8px 20px rgba(0,0,0,0.15);
+}
+.card h2 {
+    margin: 0;
+    font-size: 30px;
+}
+.card p {
+    margin: 5px 0 0 0;
+    font-size: 16px;
+    color: gray;
+}
+</style>
+""", unsafe_allow_html=True)
+
 # ---------------- DATABASE INIT ---------------- #
 conn = sqlite3.connect("predictions.db")
 cursor = conn.cursor()
-
 cursor.execute("""
 CREATE TABLE IF NOT EXISTS history (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -144,7 +170,30 @@ elif menu == "Single Prediction":
         conn.commit()
         conn.close()
 
-# ---------------- BULK ---------------- #
+        # -------- PDF -------- #
+        buffer = io.BytesIO()
+        doc = SimpleDocTemplate(buffer, pagesize=A4)
+        elements = []
+        styles = getSampleStyleSheet()
+
+        elements.append(Paragraph("<b>Heart Disease Prediction Report</b>", styles["Title"]))
+        elements.append(Spacer(1, 0.5 * inch))
+        elements.append(Paragraph(f"Patient ID: {patient_id}", styles["Normal"]))
+        elements.append(Paragraph(f"Name: {patient_name}", styles["Normal"]))
+        elements.append(Paragraph(f"Result: {result}", styles["Normal"]))
+        elements.append(Paragraph(f"Risk Score: {prob:.2f}", styles["Normal"]))
+
+        doc.build(elements)
+        buffer.seek(0)
+
+        st.download_button(
+            label="Download PDF Report",
+            data=buffer,
+            file_name="prediction_report.pdf",
+            mime="application/pdf"
+        )
+
+# ---------------- BULK PREDICTION ---------------- #
 elif menu == "Bulk Prediction":
 
     st.header("Bulk CSV Prediction")
@@ -170,7 +219,15 @@ elif menu == "Bulk Prediction":
 
         st.write(df)
 
-# ---------------- DASHBOARD ---------------- #
+        csv = df.to_csv(index=False).encode()
+        st.download_button(
+            "Download Results CSV",
+            csv,
+            "bulk_prediction_results.csv",
+            "text/csv"
+        )
+
+# ---------------- DOCTOR DASHBOARD ---------------- #
 elif menu == "Doctor Dashboard":
 
     st.header("Doctor Dashboard")
@@ -181,12 +238,28 @@ elif menu == "Doctor Dashboard":
 
     if not df.empty:
 
-        st.dataframe(df)
+        total = len(df)
+        high = len(df[df["risk_score"] >= 0.7])
+        medium = len(df[(df["risk_score"] >= 0.3) & (df["risk_score"] < 0.7)])
+        low = len(df[df["risk_score"] < 0.3])
+
+        col1, col2, col3, col4 = st.columns(4)
+
+        col1.markdown(f"<div class='card'><h2>{total}</h2><p>Total Patients</p></div>", unsafe_allow_html=True)
+        col2.markdown(f"<div class='card'><h2>{high}</h2><p>High Risk</p></div>", unsafe_allow_html=True)
+        col3.markdown(f"<div class='card'><h2>{medium}</h2><p>Medium Risk</p></div>", unsafe_allow_html=True)
+        col4.markdown(f"<div class='card'><h2>{low}</h2><p>Low Risk</p></div>", unsafe_allow_html=True)
+
+        st.markdown("### Risk Distribution")
 
         fig, ax = plt.subplots()
-        ax.hist(df["risk_score"])
-        ax.set_title("Risk Score Distribution")
+        ax.pie([high, medium, low],
+               labels=["High", "Medium", "Low"],
+               autopct="%1.1f%%")
         st.pyplot(fig)
+
+        st.markdown("### All Records")
+        st.dataframe(df)
 
     else:
         st.info("No records found")
