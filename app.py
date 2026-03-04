@@ -22,30 +22,26 @@ st.set_page_config(
 # ---------------- BACKGROUND ---------------- #
 def set_bg(image_file):
     try:
-        with open(image_file, "rb") as f:
+        with open(image_file,"rb") as f:
             data = f.read()
         encoded = base64.b64encode(data).decode()
-        page_bg_img = f"""
+        st.markdown(f"""
         <style>
         .stApp {{
-           background-image: url("data:image/jpeg;base64,{encoded}");
-           background-size: cover;
-           background-position: center;
+            background-image: url("data:image/jpeg;base64,{encoded}");
+            background-size: cover;
+            background-position: center;
         }}
         </style>
-        """
-        st.markdown(page_bg_img, unsafe_allow_html=True)
+        """, unsafe_allow_html=True)
     except:
         pass
 set_bg("bg.jpg")
 
 # ---------------- SESSION INIT ---------------- #
-if "logged_in" not in st.session_state:
-    st.session_state["logged_in"] = False
-if "page" not in st.session_state:
-    st.session_state["page"] = "Home"
-if "history" not in st.session_state:
-    st.session_state["history"] = []
+if "logged_in" not in st.session_state: st.session_state["logged_in"] = False
+if "page" not in st.session_state: st.session_state["page"] = "Home"
+if "history" not in st.session_state: st.session_state["history"] = []
 
 # ---------------- DATABASE ---------------- #
 conn = sqlite3.connect("predictions.db", check_same_thread=False)
@@ -60,8 +56,6 @@ c.execute('''CREATE TABLE IF NOT EXISTS history (
 conn.commit()
 
 # ---------------- LOGIN ---------------- #
-import hashlib
-
 def hash_password(password):
     return hashlib.sha256(password.encode()).hexdigest()
 
@@ -69,29 +63,20 @@ def login_page():
     st.title("🔐 Heart Disease Prediction - Login")
     username = st.text_input("Username")
     password = st.text_input("Password", type="password")
-    
-    if "login_attempt" not in st.session_state:
-        st.session_state["login_attempt"] = False
-
     if st.button("Login"):
-        st.session_state["login_attempt"] = True
-        if username == "admin" and hash_password(password) == hash_password("1234"):
+        if username=="admin" and hash_password(password)==hash_password("1234"):
             st.session_state["logged_in"] = True
+            st.experimental_rerun()
+        else:
+            st.error("Invalid Credentials")
 
-# ---------------- MAIN LOGIN CHECK ---------------- #
-if not st.session_state.get("logged_in", False):
+if not st.session_state["logged_in"]:
     login_page()
-    # Only rerun if login attempt was successful
-    if st.session_state.get("logged_in", False):
-        st.experimental_rerun()
-    else:
-        st.stop()
+    st.stop()
 
-
-# ---------------- NAVIGATION ---------------- #
+# ---------------- SIDEBAR NAV ---------------- #
 st.sidebar.image("logo.png", width=150)
-page = st.sidebar.radio("Navigation", ["Home","Single Prediction","Bulk Prediction","Doctor Dashboard","Logout"])
-st.session_state["page"] = page
+st.session_state["page"] = st.sidebar.radio("Navigation", ["Home","Single Prediction","Bulk Prediction","Doctor Dashboard","Logout"])
 
 # ---------------- LOAD MODEL ---------------- #
 model = joblib.load("heart_model.pkl")
@@ -113,7 +98,7 @@ def generate_pdf(patient_id, patient_name, age, result_text, risk_score):
     elements = []
     styles = getSampleStyleSheet()
     elements.append(Paragraph("<b>Heart Disease Prediction Report</b>", styles["Title"]))
-    elements.append(Spacer(1, 0.5*inch))
+    elements.append(Spacer(1,0.5*inch))
     elements.append(Paragraph(f"Patient ID: {patient_id}", styles["Normal"]))
     elements.append(Paragraph(f"Patient Name: {patient_name}", styles["Normal"]))
     elements.append(Paragraph(f"Age: {age}", styles["Normal"]))
@@ -125,35 +110,35 @@ def generate_pdf(patient_id, patient_name, age, result_text, risk_score):
     return buffer
 
 # ---------------- HOME PAGE ---------------- #
-if st.session_state["page"] == "Home":
+if st.session_state["page"]=="Home":
     st.title("🏠 Welcome to Heart Disease Prediction System")
-    st.write("Use the navigation sidebar to go to prediction pages or doctor dashboard.")
+    st.write("Use the sidebar to navigate: Single Prediction, Bulk Prediction, Doctor Dashboard, or Logout.")
 
-# ---------------- SINGLE PATIENT ---------------- #
-if st.session_state["page"] == "Single Prediction":
+# ---------------- SINGLE PREDICTION ---------------- #
+if st.session_state["page"]=="Single Prediction":
     st.header("Single Patient Prediction")
     patient_id = st.text_input("Patient ID")
     patient_name = st.text_input("Patient Name")
-    age = st.number_input("Age", 20, 100, 50)
-    sex = st.selectbox("Sex", ["Male", "Female"])
-    cp = st.selectbox("Chest Pain Type (0-3)", [0,1,2,3])
-    trestbps = st.number_input("Resting BP", 80, 200, 120)
-    chol = st.number_input("Cholesterol", 100, 400, 200)
-    fbs = st.selectbox("Fasting Blood Sugar > 120 mg/dl", ["Yes","No"])
-    restecg = st.selectbox("Rest ECG (0-2)", [0,1,2])
-    thalach = st.number_input("Max Heart Rate", 60, 220, 150)
-    exang = st.selectbox("Exercise Induced Angina", ["Yes","No"])
-    oldpeak = st.number_input("ST Depression", 0.0,10.0,1.0)
-    slope = st.selectbox("Slope (0-2)", [0,1,2])
-    ca = st.selectbox("Major Vessels (0-3)", [0,1,2,3])
-    thal = st.selectbox("Thal (1-3)", [1,2,3])
+    age = st.number_input("Age",20,100,50)
+    sex = st.selectbox("Sex",["Male","Female"])
+    cp = st.selectbox("Chest Pain Type (0-3)",[0,1,2,3])
+    trestbps = st.number_input("Resting BP",80,200,120)
+    chol = st.number_input("Cholesterol",100,400,200)
+    fbs = st.selectbox("Fasting Blood Sugar > 120 mg/dl",["Yes","No"])
+    restecg = st.selectbox("Rest ECG (0-2)",[0,1,2])
+    thalach = st.number_input("Max Heart Rate",60,220,150)
+    exang = st.selectbox("Exercise Induced Angina",["Yes","No"])
+    oldpeak = st.number_input("ST Depression",0.0,10.0,1.0)
+    slope = st.selectbox("Slope (0-2)",[0,1,2])
+    ca = st.selectbox("Major Vessels (0-3)",[0,1,2,3])
+    thal = st.selectbox("Thal (1-3)",[1,2,3])
 
     sex = 1 if sex=="Male" else 0
     fbs = 1 if fbs=="Yes" else 0
     exang = 1 if exang=="Yes" else 0
 
     if st.button("Predict"):
-        input_data = np.array([[age, sex, cp, trestbps, chol, fbs, restecg, thalach, exang, oldpeak, slope, ca, thal]])
+        input_data = np.array([[age,sex,cp,trestbps,chol,fbs,restecg,thalach,exang,oldpeak,slope,ca,thal]])
         input_scaled = scaler.transform(input_data)
         prediction = model.predict(input_scaled)[0]
         probability = model.predict_proba(input_scaled)[0][1]
@@ -164,21 +149,21 @@ if st.session_state["page"] == "Single Prediction":
         st.info(f"Risk Score: {probability:.2f} → {risk}")
         st.info(f"AI Advice: {ai_advice(probability)}")
 
-        # Save to session history & DB
+        # Save to session & DB
         st.session_state["history"].append(probability)
         if patient_id and patient_name:
-            c.execute("INSERT INTO history (patient_id, patient_name, prediction, risk_score) VALUES (?, ?, ?, ?)",
-                      (patient_id, patient_name, result_text, probability))
+            c.execute("INSERT INTO history (patient_id,patient_name,prediction,risk_score) VALUES (?,?,?,?)",
+                      (patient_id,patient_name,result_text,probability))
             conn.commit()
 
-        # PDF download
+        # PDF
         pdf_buffer = generate_pdf(patient_id, patient_name, age, result_text, probability)
-        st.download_button("Download PDF Report", data=pdf_buffer, file_name=f"{patient_name}_report.pdf", mime="application/pdf")
+        st.download_button("Download PDF Report",pdf_buffer,f"{patient_name}_report.pdf","application/pdf")
 
         # Graph
         if len(st.session_state["history"])>0:
             fig, ax = plt.subplots()
-            ax.plot(range(1,len(st.session_state["history"])+1), st.session_state["history"], marker='o')
+            ax.plot(range(1,len(st.session_state["history"])+1),st.session_state["history"],marker='o')
             ax.set_xlabel("Prediction Number")
             ax.set_ylabel("Risk Score")
             ax.set_ylim(0,1)
@@ -186,15 +171,15 @@ if st.session_state["page"] == "Single Prediction":
             st.pyplot(fig)
 
 # ---------------- BULK PREDICTION ---------------- #
-if st.session_state["page"] == "Bulk Prediction":
+if st.session_state["page"]=="Bulk Prediction":
     st.header("Bulk Prediction (CSV Upload)")
     uploaded_file = st.file_uploader("Upload CSV File", type=["csv"])
     if uploaded_file:
         df = pd.read_csv(uploaded_file)
         df.columns = df.columns.str.strip().str.lower()
-        expected_cols = ["patient_id","patient_name","age","sex","cp","trestbps","chol","fbs","restecg","thalach","exang","oldpeak","slope","ca","thal"]
-        if all(col in df.columns for col in expected_cols):
-            df = df[expected_cols]
+        required_cols = ["patient_id","patient_name","age","sex","cp","trestbps","chol","fbs","restecg","thalach","exang","oldpeak","slope","ca","thal"]
+        if all(col in df.columns for col in required_cols):
+            df = df[required_cols]
             df["sex"] = df["sex"].replace({"Male":1,"Female":0})
             df["fbs"] = df["fbs"].replace({"Yes":1,"No":0})
             df["exang"] = df["exang"].replace({"Yes":1,"No":0})
@@ -207,25 +192,20 @@ if st.session_state["page"] == "Bulk Prediction":
             df["Risk Score"] = probs
             df["AI Advice"] = df["Risk Score"].apply(ai_advice)
 
-            # Save all to DB and generate PDF for each
+            # Save to DB
             for idx,row in df.iterrows():
-                c.execute("INSERT INTO history (patient_id, patient_name, prediction, risk_score) VALUES (?, ?, ?, ?)",
-                          (row["patient_id"], row["patient_name"], row["Prediction"], row["Risk Score"]))
+                c.execute("INSERT INTO history (patient_id,patient_name,prediction,risk_score) VALUES (?,?,?,?)",
+                          (row["patient_id"],row["patient_name"],row["Prediction"],row["Risk Score"]))
             conn.commit()
 
             st.success("Bulk Prediction Completed ✅")
             st.write(df)
-            st.download_button("Download CSV Results", df.to_csv(index=False).encode(), "bulk_results.csv", "text/csv")
-
-            # PDF download for each patient
-            for idx,row in df.iterrows():
-                pdf_buf = generate_pdf(row["patient_id"], row["patient_name"], row["age"], row["Prediction"], row["Risk Score"])
-                st.download_button(f"Download PDF for {row['patient_name']}", pdf_buf, file_name=f"{row['patient_name']}_report.pdf", mime="application/pdf")
+            st.download_button("Download CSV Results", df.to_csv(index=False).encode(), "bulk_results.csv","text/csv")
         else:
             st.error("CSV format incorrect. Include all required columns.")
 
 # ---------------- DOCTOR DASHBOARD ---------------- #
-if st.session_state["page"] == "Doctor Dashboard":
+if st.session_state["page"]=="Doctor Dashboard":
     st.header("Doctor Dashboard")
     history_df = pd.read_sql_query("SELECT * FROM history", conn)
     st.write(history_df)
@@ -245,9 +225,7 @@ if st.session_state["page"] == "Doctor Dashboard":
         st.info("No prediction history available.")
 
 # ---------------- LOGOUT ---------------- #
-if st.session_state["page"] == "Logout":
+if st.session_state["page"]=="Logout":
     st.session_state["logged_in"] = False
     st.session_state["page"] = "Home"
     st.experimental_rerun()
-
-
