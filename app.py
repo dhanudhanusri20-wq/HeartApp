@@ -3,10 +3,9 @@ import joblib
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
+import sqlite3
 import base64
 import io
-import sqlite3
-from datetime import datetime
 
 from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer
 from reportlab.lib.styles import getSampleStyleSheet
@@ -19,21 +18,6 @@ st.set_page_config(
     page_icon="logo.png",
     layout="centered"
 )
-
-# ---------------- DATABASE SETUP ---------------- #
-conn = sqlite3.connect("heartapp.db", check_same_thread=False)
-c = conn.cursor()
-
-c.execute("""
-CREATE TABLE IF NOT EXISTS history (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    age INTEGER,
-    result TEXT,
-    risk_score REAL,
-    date TEXT
-)
-""")
-conn.commit()
 
 # ---------------- BACKGROUND ---------------- #
 def set_bg(image_file):
@@ -57,7 +41,21 @@ def set_bg(image_file):
 
 set_bg("bg.jpg")
 
-# ---------------- SESSION INIT ---------------- #
+# ---------------- DATABASE ---------------- #
+conn = sqlite3.connect("heartapp.db", check_same_thread=False)
+cursor = conn.cursor()
+
+cursor.execute("""
+CREATE TABLE IF NOT EXISTS history (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    age INTEGER,
+    result TEXT,
+    risk_score REAL
+)
+""")
+conn.commit()
+
+# ---------------- SESSION ---------------- #
 if "logged_in" not in st.session_state:
     st.session_state["logged_in"] = False
 
@@ -87,7 +85,7 @@ st.title("🫀 Heart Disease Risk Prediction System")
 st.caption("AI-Based Clinical Decision Support Prototype")
 
 # ======================================================
-# SINGLE PREDICTION
+# 🔹 SINGLE PATIENT PREDICTION
 # ======================================================
 
 st.header("Single Patient Prediction")
@@ -129,12 +127,14 @@ if st.button("Predict"):
     st.success(f"Prediction: {result_text}")
     st.info(f"Risk Score: {probability:.2f} → {risk}")
 
-    # SAVE TO DATABASE
-    c.execute("INSERT INTO history (age, result, risk_score, date) VALUES (?,?,?,?)",
-              (age, result_text, probability, datetime.now().strftime("%Y-%m-%d %H:%M:%S")))
+    # Save to Database
+    cursor.execute(
+        "INSERT INTO history (age, result, risk_score) VALUES (?, ?, ?)",
+        (age, result_text, float(probability))
+    )
     conn.commit()
 
-    # PDF REPORT
+    # -------- PDF -------- #
     buffer = io.BytesIO()
     doc = SimpleDocTemplate(buffer, pagesize=A4)
     elements = []
@@ -157,22 +157,92 @@ if st.button("Predict"):
     )
 
 # ======================================================
-# DATABASE HISTORY VIEW
+# 📊 GRAPH + HISTORY
 # ======================================================
 
-st.subheader("Prediction History (Saved in Database)")
+st.subheader("Prediction History")
 
 data = pd.read_sql_query("SELECT * FROM history ORDER BY id DESC", conn)
 st.dataframe(data)
 
-# CLEAR DATABASE
-if st.button("Clear Database History"):
-    c.execute("DELETE FROM history")
-    conn.commit()
-    st.success("Database Cleared")
-    st.rerun()
+if not data.empty:
 
-# LOGOUT
-if st.button("Logout"):
-    st.session_state["logged_in"] = False
-    st.rerun()
+    st.subheader("Risk Score Trend")
+
+    fig, ax = plt.subplots()
+    ax.plot(data["risk_score"][::-1], marker='o')
+    ax.set_xlabel("Prediction Number")
+    ax.set_ylabel("Risk Score")
+    ax.set_ylim(0,1)
+    ax.grid(True)
+
+    st.pyplot(fig)
+
+else:
+    st.info("No prediction data available.")
+
+# ======================================================
+# 📂 BULK CSV PREDICTION
+# ======================================================
+
+st.header("Bulk Prediction (CSV Upload)")
+
+uploaded_file = st.file_uploader("Upload CSV File", type=["csv"])
+
+if uploaded_file:
+    df = pd.read_csv(uploaded_file)
+    df.columns = df.columns.str.strip().str.lower()
+
+    expected_columns = [
+        "age","sex","cp","trestbps","chol","fbs",
+        "restecg","thalach","exang","oldpeak",
+        "slope","ca","thal"
+    ]
+
+    try:
+        df = df[expected_columns]
+        df = df.fillna(df.median(numeric_only=True))
+
+        df["sex"] = df["sex"].replace({"Male":1,"Female":0})
+        df["fbs"] = df["fbs"].replace({"Yes":1,"No":0})
+        df["exang"] = df["exang"].replace({"Yes":1,"No":0})
+
+        scaled = scaler.transform(df)
+        preds = model.predict(scaled)
+        probs = model.predict_proba(scaled)[:,1]
+
+        df["Prediction"] = preds
+        df["Risk Score"] = probs
+
+        st.success("Bulk Prediction Completed")
+        st.write(df)
+
+        csv = df.to_csv(index=False).encode()
+
+        st.download_button(
+            "Download Results CSV",
+            csv,
+            "bulk_prediction_results.csv",
+            "text/csv"
+        )
+
+    except:
+        st.error("CSV format incorrect. Check column names.")
+
+# ======================================================
+# CLEAR + LOGOUT
+# ======================================================
+
+col1, col2 = st.columns(2)
+
+with col1:
+    if st.button("Clear History"):
+        cursor.execute("DELETE FROM history")
+        conn.commit()
+        st.success("History Cleared")
+        st.rerun()
+
+with col2:
+    if st.button("Logout"):
+        st.session_state["logged_in"] = False
+        st.rerun()
