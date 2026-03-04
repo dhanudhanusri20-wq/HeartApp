@@ -60,6 +60,8 @@ c.execute('''CREATE TABLE IF NOT EXISTS history (
 conn.commit()
 
 # ---------------- LOGIN ---------------- #
+import hashlib
+
 def hash_password(password):
     return hashlib.sha256(password.encode()).hexdigest()
 
@@ -68,18 +70,19 @@ def login_page():
     username = st.text_input("Username")
     password = st.text_input("Password", type="password")
     
+    if "login_attempt" not in st.session_state:
+        st.session_state["login_attempt"] = False
+
     if st.button("Login"):
+        st.session_state["login_attempt"] = True
         if username == "admin" and hash_password(password) == hash_password("1234"):
             st.session_state["logged_in"] = True
-            st.session_state["page"] = "Home"
-            return True  # Login successful
-        else:
-            st.error("Invalid Credentials")
-            return False
 
-# Check login
-if not st.session_state["logged_in"]:
-    if login_page():
+# ---------------- MAIN LOGIN CHECK ---------------- #
+if not st.session_state.get("logged_in", False):
+    login_page()
+    # Only rerun if login attempt was successful
+    if st.session_state.get("logged_in", False):
         st.experimental_rerun()
     else:
         st.stop()
@@ -246,4 +249,5 @@ if st.session_state["page"] == "Logout":
     st.session_state["logged_in"] = False
     st.session_state["page"] = "Home"
     st.experimental_rerun()
+
 
