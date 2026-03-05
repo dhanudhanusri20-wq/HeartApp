@@ -186,41 +186,69 @@ if st.session_state["page"]=="Single Prediction":
             ax.grid(True)
             st.pyplot(fig)
 
-
 # ---------------- BULK PREDICTION ---------------- #
-if st.session_state["page"]=="Bulk Prediction":
+if st.session_state["page"] == "Bulk Prediction":
     st.header("Bulk Prediction (CSV Upload)")
     uploaded_file = st.file_uploader("Upload CSV File", type=["csv"])
+    
     if uploaded_file:
-        df = pd.read_csv(uploaded_file)
-        df.columns = df.columns.str.strip().str.lower()
-        required_cols = ["patient_id","patient_name","age","sex","cp","trestbps","chol","fbs","restecg","thalach","exang","oldpeak","slope","ca","thal"]
-        
-        if all(col in df.columns for col in required_cols):
-            df = df[required_cols]
-            df["sex"] = df["sex"].replace({"Male":1,"Female":0})
-            df["fbs"] = df["fbs"].replace({"Yes":1,"No":0})
-            df["exang"] = df["exang"].replace({"Yes":1,"No":0})
-            df = df.fillna(df.median(numeric_only=True))
+        try:
+            df = pd.read_csv(uploaded_file)
+            # Clean column names
+            df.columns = df.columns.str.strip().str.lower()
+            required_cols = ["patient_id","patient_name","age","sex","cp","trestbps","chol","fbs","restecg","thalach","exang","oldpeak","slope","ca","thal"]
+            
+            # Check CSV has all required columns
+            if all(col in df.columns for col in required_cols):
+                df = df[required_cols]
+                
+                # Convert categorical to numeric
+                df["sex"] = df["sex"].replace({"Male":1,"Female":0})
+                df["fbs"] = df["fbs"].replace({"Yes":1,"No":0})
+                df["exang"] = df["exang"].replace({"Yes":1,"No":0})
+                
+                # Fill missing numeric values
+                df = df.fillna(df.median(numeric_only=True))
 
-            input_scaled = scaler.transform(df[["age","sex","cp","trestbps","chol","fbs","restecg","thalach","exang","oldpeak","slope","ca","thal"]])
-            preds = model.predict(input_scaled)
-            probs = model.predict_proba(input_scaled)[:,1]
-            df["Prediction"] = ["Heart Disease" if p==1 else "No Heart Disease" for p in preds]
-            df["Risk Score"] = probs
-            df["AI Advice"] = df["Risk Score"].apply(ai_advice)
+                # Predict
+                input_scaled = scaler.transform(df[["age","sex","cp","trestbps","chol","fbs","restecg","thalach","exang","oldpeak","slope","ca","thal"]])
+                preds = model.predict(input_scaled)
+                probs = model.predict_proba(input_scaled)[:,1]
+                df["Prediction"] = ["Heart Disease" if p==1 else "No Heart Disease" for p in preds]
+                df["Risk Score"] = probs
+                df["AI Advice"] = df["Risk Score"].apply(ai_advice)
 
-            # Save to DB and show PDF download for each patient
-            st.success("Bulk Prediction Completed ✅")
-            for idx,row in df.iterrows():
-                c.execute("INSERT INTO history (patient_id,patient_name,prediction,risk_score) VALUES (?,?,?,?)",
-                          (row["patient_id"],row["patient_name"],row["Prediction"],row["Risk Score"]))
-                pdf_buf = generate_pdf(row["patient_id"], row["patient_name"], row["age"], row["Prediction"], row["Risk Score"])
-                st.download_button(f"Download PDF for {row['patient_name']}", pdf_buf, 
-                                   file_name=f"{row['patient_name']}_report.pdf", mime="application/pdf")
-            conn.commit()
-        else:
-            st.error("CSV format incorrect. Include all required columns.")
+                st.success("Bulk Prediction Completed ✅")
+                st.dataframe(df)
+
+                # Save all to DB first
+                for idx, row in df.iterrows():
+                    c.execute(
+                        "INSERT INTO history (patient_id,patient_name,prediction,risk_score) VALUES (?,?,?,?)",
+                        (row["patient_id"], row["patient_name"], row["Prediction"], row["Risk Score"])
+                    )
+                conn.commit()
+
+                # Download CSV for all predictions
+                csv_bytes = df.to_csv(index=False).encode()
+                st.download_button("Download All Results CSV", csv_bytes, "bulk_results.csv", "text/csv")
+
+                # PDF download buttons for each patient
+                st.markdown("### Individual Patient Reports")
+                for idx, row in df.iterrows():
+                    pdf_buf = generate_pdf(row["patient_id"], row["patient_name"], row["age"], row["Prediction"], row["Risk Score"])
+                    st.download_button(
+                        f"{row['patient_name']} PDF",
+                        pdf_buf,
+                        file_name=f"{row['patient_name']}_report.pdf",
+                        mime="application/pdf"
+                    )
+            else:
+                st.error("CSV format incorrect. Make sure all required columns are included.")
+        except Exception as e:
+            st.error(f"Error reading CSV: {e}")
+
+
 
 # ---------------- DOCTOR DASHBOARD ---------------- #
 if st.session_state["page"]=="Doctor Dashboard":
@@ -248,5 +276,6 @@ if st.session_state["page"]=="Logout":
     st.session_state["page"] = "Home"
     st.success("Logged out successfully ✅")
     st.stop()
+
 
 
