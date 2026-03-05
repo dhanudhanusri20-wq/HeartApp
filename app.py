@@ -115,7 +115,7 @@ if st.session_state["page"]=="Home":
     st.title("🏠 Welcome to Heart Disease Prediction System")
     st.write("Use the sidebar to navigate: Single Prediction, Bulk Prediction, Doctor Dashboard, or Logout.")
 
-# ---------------- SINGLE PATIENT ---------------- #
+# ---------------- SINGLE PREDICTION ---------------- #
 if st.session_state["page"]=="Single Prediction":
     st.header("Single Patient Prediction")
     patient_id = st.text_input("Patient ID")
@@ -145,10 +145,11 @@ if st.session_state["page"]=="Single Prediction":
         probability = model.predict_proba(input_scaled)[0][1]
         risk = "Low Risk" if probability<0.3 else "Medium Risk" if probability<0.7 else "High Risk"
         result_text = "Heart Disease" if prediction==1 else "No Heart Disease"
+        advice = ai_advice(probability)
 
         st.success(f"Prediction: {result_text}")
         st.info(f"Risk Score: {probability:.2f} → {risk}")
-        st.info(f"AI Advice: {ai_advice(probability)}")
+        st.info(f"AI Advice: {advice}")  # <-- AI advice shown
 
         # Save to session & DB
         st.session_state["history"].append(probability)
@@ -158,20 +159,34 @@ if st.session_state["page"]=="Single Prediction":
             conn.commit()
 
         # PDF
-        pdf_buffer = generate_pdf(patient_id, patient_name, age, result_text, probability)
-        st.download_button("Download PDF Report",pdf_buffer,f"{patient_name}_report.pdf","application/pdf")
+        buffer = io.BytesIO()
+        doc = SimpleDocTemplate(buffer, pagesize=A4)
+        elements = []
+        styles = getSampleStyleSheet()
+        elements.append(Paragraph("<b>Heart Disease Prediction Report</b>", styles["Title"]))
+        elements.append(Spacer(1,0.5*inch))
+        elements.append(Paragraph(f"Patient ID: {patient_id}", styles["Normal"]))
+        elements.append(Paragraph(f"Patient Name: {patient_name}", styles["Normal"]))
+        elements.append(Paragraph(f"Age: {age}", styles["Normal"]))
+        elements.append(Paragraph(f"Result: {result_text}", styles["Normal"]))
+        elements.append(Paragraph(f"Risk Score: {probability:.2f}", styles["Normal"]))
+        elements.append(Paragraph(f"AI Advice: {advice}", styles["Normal"]))  # <-- AI advice in PDF
+        doc.build(elements)
+        buffer.seek(0)
+        st.download_button("Download PDF Report",buffer,f"{patient_name}_report.pdf","application/pdf")
 
         # Graph
         if len(st.session_state["history"])>0:
             fig, ax = plt.subplots()
-            ax.plot(range(1,len(st.session_state["history"])+1),st.session_state["history"],marker='o')
+            ax.plot(range(1,len(st.session_state["history"])+1), st.session_state["history"], marker='o')
             ax.set_xlabel("Prediction Number")
             ax.set_ylabel("Risk Score")
             ax.set_ylim(0,1)
+            ax.set_title("Risk Score Trend")
             ax.grid(True)
             st.pyplot(fig)
 
-# ---------------- BULK PREDICTION ---------------- #
+
 # ---------------- BULK PREDICTION ---------------- #
 if st.session_state["page"]=="Bulk Prediction":
     st.header("Bulk Prediction (CSV Upload)")
@@ -233,4 +248,5 @@ if st.session_state["page"]=="Logout":
     st.session_state["page"] = "Home"
     st.success("Logged out successfully ✅")
     st.stop()
+
 
