@@ -172,6 +172,7 @@ if st.session_state["page"]=="Single Prediction":
             st.pyplot(fig)
 
 # ---------------- BULK PREDICTION ---------------- #
+# ---------------- BULK PREDICTION ---------------- #
 if st.session_state["page"]=="Bulk Prediction":
     st.header("Bulk Prediction (CSV Upload)")
     uploaded_file = st.file_uploader("Upload CSV File", type=["csv"])
@@ -179,6 +180,7 @@ if st.session_state["page"]=="Bulk Prediction":
         df = pd.read_csv(uploaded_file)
         df.columns = df.columns.str.strip().str.lower()
         required_cols = ["patient_id","patient_name","age","sex","cp","trestbps","chol","fbs","restecg","thalach","exang","oldpeak","slope","ca","thal"]
+        
         if all(col in df.columns for col in required_cols):
             df = df[required_cols]
             df["sex"] = df["sex"].replace({"Male":1,"Female":0})
@@ -193,15 +195,15 @@ if st.session_state["page"]=="Bulk Prediction":
             df["Risk Score"] = probs
             df["AI Advice"] = df["Risk Score"].apply(ai_advice)
 
-            # Save to DB
+            # Save to DB and show PDF download for each patient
+            st.success("Bulk Prediction Completed ✅")
             for idx,row in df.iterrows():
                 c.execute("INSERT INTO history (patient_id,patient_name,prediction,risk_score) VALUES (?,?,?,?)",
                           (row["patient_id"],row["patient_name"],row["Prediction"],row["Risk Score"]))
+                pdf_buf = generate_pdf(row["patient_id"], row["patient_name"], row["age"], row["Prediction"], row["Risk Score"])
+                st.download_button(f"Download PDF for {row['patient_name']}", pdf_buf, 
+                                   file_name=f"{row['patient_name']}_report.pdf", mime="application/pdf")
             conn.commit()
-
-            st.success("Bulk Prediction Completed ✅")
-            st.write(df)
-            st.download_button("Download CSV Results", df.to_csv(index=False).encode(), "bulk_results.csv","text/csv")
         else:
             st.error("CSV format incorrect. Include all required columns.")
 
@@ -231,3 +233,4 @@ if st.session_state["page"]=="Logout":
     st.session_state["page"] = "Home"
     st.success("Logged out successfully ✅")
     st.stop()
+
