@@ -25,7 +25,7 @@ st.set_page_config(
 
 genai.configure(api_key=st.secrets["GEMINI_API_KEY"])
 gemini_model = genai.GenerativeModel("gemini-pro")
-
+gemini_model = genai.GenerativeModel("gemini-1.5-flash")
 
 # ---------------- BACKGROUND IMAGE ---------------- #
 
@@ -352,6 +352,7 @@ if st.session_state.page == "Logout":
     st.success("Logged Out")
 
     st.stop()
+
 
 
 
