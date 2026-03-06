@@ -6,6 +6,8 @@ import matplotlib.pyplot as plt
 import base64
 import io
 import sqlite3
+import google.generativeai as genai
+genai.configure(api_key=st.secrets["GEMINI_API_KEY"])
 from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer
 from reportlab.lib.styles import getSampleStyleSheet
 from reportlab.lib.pagesizes import A4
@@ -336,6 +338,7 @@ if st.session_state["page"]=="Logout":
     st.session_state["page"] = "Home"
     st.success("Logged out successfully ✅")
     st.stop()
+
 
 
 
