@@ -306,51 +306,35 @@ genai.configure(api_key="YOUR_API_KEY")
 model = genai.GenerativeModel("gemini-pro")
 
 # ---------------- CHATBOT ---------------- #
-if st.session_state["page"]=="Chatbot":
+if st.session_state["page"] == "Chatbot":
 
     st.header("💬 DD CardioBot")
     st.subheader("Your AI Heart Health Assistant ❤️")
 
-    if "messages" not in st.session_state:
-        st.session_state.messages = []
-
-    user_input = st.chat_input("Ask anything about heart health...")
+    user_input = st.text_input("Ask anything about heart health")
 
     if user_input:
-
-        st.session_state.messages.append(("user", user_input))
-
-        prompt = f"""
-        You are DD CardioBot, an AI assistant that helps users with heart health information.
-        Give simple, short and helpful advice about heart disease, symptoms, prevention,
-        exercise, diet and when to consult a doctor.
-
-        User Question: {user_input}
-        """
-
         try:
+            prompt = f"""
+            You are a heart health assistant.
+            Give simple advice about heart disease symptoms,
+            prevention, exercise, diet and when to consult a doctor.
+
+            User Question: {user_input}
+            """
+
             response = model.generate_content(prompt)
-            reply = response.text
+            st.write(response.text)
+
         except:
-            reply = "⚠️ Sorry, AI assistant is temporarily unavailable."
-
-        st.session_state.messages.append(("bot", reply))
-
-    for role,msg in st.session_state.messages:
-        if role=="user":
-            st.chat_message("user").write(msg)
-        else:
-            st.chat_message("assistant").write(msg)
-
-
-
-
+            st.warning("⚠️ Sorry, AI assistant is temporarily unavailable.")
 # ---------------- LOGOUT ---------------- #
 if st.session_state["page"]=="Logout":
     st.session_state["logged_in"] = False
     st.session_state["page"] = "Home"
     st.success("Logged out successfully ✅")
     st.stop()
+
 
 
 
