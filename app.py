@@ -1,10 +1,5 @@
 import streamlit as st
-
-# Gemini AI
 import google.generativeai as genai
-genai.configure(api_key=st.secrets["GEMINI_API_KEY"])
-gemini_model = genai.GenerativeModel("gemini-1.5-flash")
-
 import joblib
 import numpy as np
 import pandas as pd
@@ -14,12 +9,9 @@ import io
 import sqlite3
 import hashlib
 
-# PDF
 from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer
 from reportlab.lib.styles import getSampleStyleSheet
 from reportlab.lib.pagesizes import A4
-from reportlab.lib.units import inch
-
 
 # ---------------- PAGE CONFIG ---------------- #
 
@@ -29,17 +21,51 @@ st.set_page_config(
     layout="centered"
 )
 
+# ---------------- GEMINI API ---------------- #
+
+genai.configure(api_key=st.secrets["GEMINI_API_KEY"])
+gemini_model = genai.GenerativeModel("gemini-1.5-flash")
+
+# ---------------- BACKGROUND IMAGE ---------------- #
+
+def set_bg(image_file):
+
+    try:
+
+        with open(image_file, "rb") as f:
+
+            data = f.read()
+
+        encoded = base64.b64encode(data).decode()
+
+        st.markdown(
+        f"""
+        <style>
+        .stApp {{
+        background-image: url("data:image/jpg;base64,{encoded}");
+        background-size: cover;
+        background-position: center;
+        }}
+        </style>
+        """,
+        unsafe_allow_html=True
+        )
+
+    except:
+        pass
+
+set_bg("bg.jpg")
+
 # ---------------- SESSION STATE ---------------- #
 
 if "logged_in" not in st.session_state:
-    st.session_state["logged_in"] = False
+    st.session_state.logged_in = False
 
 if "page" not in st.session_state:
-    st.session_state["page"] = "Home"
+    st.session_state.page = "Home"
 
 if "history" not in st.session_state:
-    st.session_state["history"] = []
-
+    st.session_state.history = []
 
 # ---------------- DATABASE ---------------- #
 
@@ -58,12 +84,10 @@ risk_score REAL
 
 conn.commit()
 
-
 # ---------------- PASSWORD HASH ---------------- #
 
 def hash_password(password):
     return hashlib.sha256(password.encode()).hexdigest()
-
 
 # ---------------- LOGIN PAGE ---------------- #
 
@@ -78,54 +102,40 @@ def login_page():
 
         if username == "admin" and hash_password(password) == hash_password("1234"):
 
-            st.session_state["logged_in"] = True
+            st.session_state.logged_in = True
             st.success("Login Successful ✅")
 
         else:
 
             st.error("Invalid Login")
 
-
 # ---------------- LOGIN CHECK ---------------- #
 
-if not st.session_state["logged_in"]:
+if not st.session_state.logged_in:
 
     login_page()
     st.stop()
-
 
 # ---------------- SIDEBAR ---------------- #
 
 st.sidebar.title("Navigation")
 
-st.session_state["page"] = st.sidebar.radio(
-
-    "Go to",
-
-    [
-
-        "Home",
-
-        "Single Prediction",
-
-        "Bulk Prediction",
-
-        "Doctor Dashboard",
-
-        "Chatbot",
-
-        "Logout"
-
-    ]
-
+st.session_state.page = st.sidebar.radio(
+"Go to",
+[
+"Home",
+"Single Prediction",
+"Bulk Prediction",
+"Doctor Dashboard",
+"Chatbot",
+"Logout"
+]
 )
 
-
-# ---------------- LOAD ML MODEL ---------------- #
+# ---------------- LOAD MODEL ---------------- #
 
 model = joblib.load("heart_model.pkl")
 scaler = joblib.load("scaler.pkl")
-
 
 # ---------------- AI ADVICE ---------------- #
 
@@ -140,10 +150,9 @@ def ai_advice(score):
     else:
         return "High risk. Immediate medical attention recommended."
 
-
 # ---------------- PDF FUNCTION ---------------- #
 
-def generate_pdf(pid, name, age, result, score):
+def generate_pdf(pid,name,age,result,score):
 
     buffer = io.BytesIO()
 
@@ -169,19 +178,17 @@ def generate_pdf(pid, name, age, result, score):
 
     return buffer
 
-
 # ---------------- HOME ---------------- #
 
-if st.session_state["page"] == "Home":
+if st.session_state.page == "Home":
 
     st.title("❤️ Heart Disease Prediction System")
 
     st.write("Use sidebar to access prediction, dashboard and AI chatbot.")
 
-
 # ---------------- SINGLE PREDICTION ---------------- #
 
-if st.session_state["page"] == "Single Prediction":
+if st.session_state.page == "Single Prediction":
 
     st.header("Single Patient Prediction")
 
@@ -221,15 +228,13 @@ if st.session_state["page"] == "Single Prediction":
         st.success(result)
 
         st.info(f"Risk Score : {probability:.2f}")
-
         st.info(ai_advice(probability))
 
+        st.session_state.history.append(probability)
+
         c.execute(
-
         "INSERT INTO history (patient_id,patient_name,prediction,risk_score) VALUES (?,?,?,?)",
-
         (patient_id,patient_name,result,probability)
-
         )
 
         conn.commit()
@@ -237,21 +242,25 @@ if st.session_state["page"] == "Single Prediction":
         pdf = generate_pdf(patient_id,patient_name,age,result,probability)
 
         st.download_button(
-
         "Download Report",
-
         pdf,
-
         f"{patient_name}_report.pdf",
-
         "application/pdf"
-
         )
 
+        # Graph
+        fig, ax = plt.subplots()
+
+        ax.plot(st.session_state.history, marker="o")
+
+        ax.set_title("Risk Score Trend")
+        ax.set_ylim(0,1)
+
+        st.pyplot(fig)
 
 # ---------------- BULK PREDICTION ---------------- #
 
-if st.session_state["page"] == "Bulk Prediction":
+if st.session_state.page == "Bulk Prediction":
 
     st.header("Bulk Prediction")
 
@@ -270,7 +279,6 @@ if st.session_state["page"] == "Bulk Prediction":
         probs = model.predict_proba(scaled)[:,1]
 
         df["Prediction"] = preds
-
         df["Risk Score"] = probs
 
         st.dataframe(df)
@@ -278,21 +286,15 @@ if st.session_state["page"] == "Bulk Prediction":
         csv = df.to_csv(index=False).encode()
 
         st.download_button(
-
         "Download Results",
-
         csv,
-
         "results.csv",
-
         "text/csv"
-
         )
-
 
 # ---------------- DOCTOR DASHBOARD ---------------- #
 
-if st.session_state["page"] == "Doctor Dashboard":
+if st.session_state.page == "Doctor Dashboard":
 
     st.header("Doctor Dashboard")
 
@@ -304,18 +306,16 @@ if st.session_state["page"] == "Doctor Dashboard":
 
         fig, ax = plt.subplots()
 
-        ax.plot(data["risk_score"])
+        ax.plot(data["risk_score"], marker="o")
 
         ax.set_title("Risk Score Trend")
-
         ax.set_ylim(0,1)
 
         st.pyplot(fig)
 
-
 # ---------------- CHATBOT ---------------- #
 
-if st.session_state["page"] == "Chatbot":
+if st.session_state.page == "Chatbot":
 
     st.header("💬 DD CardioBot")
 
@@ -326,33 +326,33 @@ if st.session_state["page"] == "Chatbot":
         try:
 
             prompt = f"""
-
 You are a heart health assistant.
-
 Explain symptoms, prevention, diet, exercise and medical advice in simple words.
 
-User Question : {question}
-
+User Question: {question}
 """
 
             response = gemini_model.generate_content(prompt)
 
-            st.success(response.text)
+            if response and hasattr(response,"text"):
+                st.success(response.text)
+            else:
+                st.warning("AI did not return a response.")
 
-        except:
+        except Exception as e:
 
             st.error("⚠️ Sorry, AI assistant is temporarily unavailable.")
 
-
 # ---------------- LOGOUT ---------------- #
 
-if st.session_state["page"] == "Logout":
+if st.session_state.page == "Logout":
 
-    st.session_state["logged_in"] = False
+    st.session_state.logged_in = False
 
     st.success("Logged Out")
 
     st.stop()
+
 
 
 
