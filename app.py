@@ -7,6 +7,12 @@ import base64
 import io
 import sqlite3
 import hashlib
+import google.generativeai as genai
+
+genai.configure(api_key=st.secrets["GEMINI_API_KEY"])
+
+model = genai.GenerativeModel("gemini-1.5-flash")
+
 # PDF
 from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer
 from reportlab.lib.styles import getSampleStyleSheet
@@ -342,6 +348,7 @@ if st.session_state["page"]=="Logout":
     st.session_state["page"] = "Home"
     st.success("Logged out successfully ✅")
     st.stop()
+
 
 
 
