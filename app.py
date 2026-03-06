@@ -351,7 +351,7 @@ if st.session_state["page"]=="Logout":
 
 # AI Assistant Section
 # -----------------------------
-
+st.divider()
 st.header("💬 Heart Health AI Assistant")
 
 prompt = st.text_input("Ask a question about heart health")
@@ -359,6 +359,7 @@ prompt = st.text_input("Ask a question about heart health")
 if prompt:
     response = model.generate_content(prompt)
     st.write(response.text)
+
 
 
 
