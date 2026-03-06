@@ -6,15 +6,23 @@ import matplotlib.pyplot as plt
 import base64
 import io
 import sqlite3
+import hashlib
+
+# Gemini AI
 import google.generativeai as genai
 
+# Configure API Key
 genai.configure(api_key=st.secrets["GEMINI_API_KEY"])
 
+# Load Gemini Model
+model = genai.GenerativeModel("gemini-1.5-flash")
+
+# PDF
 from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer
 from reportlab.lib.styles import getSampleStyleSheet
 from reportlab.lib.pagesizes import A4
 from reportlab.lib.units import inch
-import hashlib
+
 
 # ---------------- PAGE CONFIG ---------------- #
 st.set_page_config(
@@ -340,6 +348,7 @@ if st.session_state["page"]=="Logout":
     st.session_state["page"] = "Home"
     st.success("Logged out successfully ✅")
     st.stop()
+
 
 
 
