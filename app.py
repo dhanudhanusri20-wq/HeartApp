@@ -7,16 +7,6 @@ import base64
 import io
 import sqlite3
 import hashlib
-
-# Gemini AI
-import google.generativeai as genai
-
-# Configure API Key
-genai.configure(api_key=st.secrets["GEMINI_API_KEY"])
-
-# Load Gemini Model
-model = genai.GenerativeModel("gemini-1.5-flash")
-
 # PDF
 from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer
 from reportlab.lib.styles import getSampleStyleSheet
@@ -329,8 +319,11 @@ if st.session_state["page"]=="Chatbot":
         User Question: {user_input}
         """
 
-        response = model.generate_content(prompt)
-        reply = response.text
+        try:
+            response = model.generate_content(prompt)
+            reply = response.text
+        except:
+            reply = "⚠️ Sorry, AI assistant is temporarily unavailable."
 
         st.session_state.messages.append(("bot", reply))
 
@@ -342,25 +335,13 @@ if st.session_state["page"]=="Chatbot":
 
 
 
+
 # ---------------- LOGOUT ---------------- #
 if st.session_state["page"]=="Logout":
     st.session_state["logged_in"] = False
     st.session_state["page"] = "Home"
     st.success("Logged out successfully ✅")
     st.stop()
-
-# AI Assistant Section
-# -----------------------------
-st.divider()
-st.header("💬 Heart Health AI Assistant")
-
-prompt = st.text_input("Ask a question about heart health")
-
-if prompt:
-    response = model.generate_content(prompt)
-    st.write(response.text)
-
-
 
 
 
