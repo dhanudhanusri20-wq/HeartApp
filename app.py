@@ -25,8 +25,9 @@ st.set_page_config(
 
 genai.configure(api_key=st.secrets["GEMINI_API_KEY"])
 
-# Only ONE model
-gemini_model = genai.GenerativeModel("gemini-1.5-flash")
+# Correct working Gemini model
+gemini_model = genai.GenerativeModel("gemini-1.5-flash-latest")
+
 
 # ---------------- BACKGROUND IMAGE ---------------- #
 
@@ -308,7 +309,7 @@ if st.session_state.page == "Doctor Dashboard":
 
 # ---------------- CHATBOT ---------------- #
 
-if st.session_state.page == "Chatbot":
+if st.session_state["page"] == "Chatbot":
 
     st.header("💬 DD CardioBot")
 
@@ -320,21 +321,23 @@ if st.session_state.page == "Chatbot":
 
             prompt = f"""
 You are a heart health assistant.
-Explain symptoms, prevention, diet and exercise in simple words.
+Explain symptoms, prevention, diet, exercise and medical advice in simple words.
 
-Question: {question}
+User Question: {question}
 """
 
             response = gemini_model.generate_content(prompt)
 
-            answer = response.text if hasattr(response,"text") else str(response)
-
-            st.success(answer)
+            if response.text:
+                st.success(response.text)
+            else:
+                st.warning("AI could not generate response")
 
         except Exception as e:
 
-            st.error("⚠️ AI assistant temporarily unavailable")
+            st.error("AI assistant temporarily unavailable")
             st.write(e)
+
 
 # ---------------- LOGOUT ---------------- #
 
@@ -343,6 +346,7 @@ if st.session_state.page == "Logout":
     st.session_state.logged_in = False
     st.success("Logged Out")
     st.stop()
+
 
 
 
