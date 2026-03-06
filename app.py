@@ -182,6 +182,7 @@ def generate_pdf(pid,name,age,result,score):
     return buffer
 
 # ---------------- HOME ---------------- #
+st.write(st.secrets)
 
 if st.session_state.page == "Home":
 
@@ -348,6 +349,7 @@ if st.session_state.page == "Logout":
     st.session_state.logged_in = False
     st.success("Logged Out")
     st.stop()
+
 
 
 
