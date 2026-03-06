@@ -312,7 +312,6 @@ if st.session_state.page == "Doctor Dashboard":
         st.pyplot(fig)
 
 # ---------------- CHATBOT ---------------- #
-
 if st.session_state["page"] == "Chatbot":
 
     st.header("💬 DD CardioBot")
@@ -320,29 +319,24 @@ if st.session_state["page"] == "Chatbot":
     question = st.text_input("Ask anything about heart health")
 
     if question:
-
         try:
-
             prompt = f"""
 You are a heart health assistant.
 Explain symptoms, prevention, diet, exercise and medical advice in simple words.
 
 User Question: {question}
 """
-
-           response = client.generate_text(
-    model="gemini-1.5",  # supported model
-    prompt=prompt
-)
-st.success(response.text)
+            # Ensure this line is indented correctly with 4 spaces
+            response = client.generate_text(
+                model="gemini-1.5",  # supported model
+                prompt=prompt
+            )
 
             st.success(response.text)
 
         except Exception as e:
-
             st.error("Gemini AI error")
             st.write(e)
-
 
 
 # ---------------- LOGOUT ---------------- #
@@ -352,6 +346,7 @@ if st.session_state.page == "Logout":
     st.session_state.logged_in = False
     st.success("Logged Out")
     st.stop()
+
 
 
 
