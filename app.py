@@ -287,56 +287,47 @@ if st.session_state["page"] == "Doctor Dashboard":
 
         st.pyplot(fig)
 
-# ---------------- CHATBOT ---------------- #
-if st.session_state["page"] == "Chatbot":
+import google.generativeai as genai
+import streamlit as st
 
-    st.header("💬 Heart Health Chatbot")
+genai.configure(api_key="YOUR_API_KEY")
+
+model = genai.GenerativeModel("gemini-pro")
+
+# ---------------- CHATBOT ---------------- #
+if st.session_state["page"]=="Chatbot":
+
+    st.header("💬 DD CardioBot")
+    st.subheader("Your AI Heart Health Assistant ❤️")
 
     if "messages" not in st.session_state:
         st.session_state.messages = []
 
-    user_input = st.chat_input("Ask about heart health...")
+    user_input = st.chat_input("Ask anything about heart health...")
 
     if user_input:
+
         st.session_state.messages.append(("user", user_input))
 
-        msg = user_input.lower()
+        prompt = f"""
+        You are DD CardioBot, an AI assistant that helps users with heart health information.
+        Give simple, short and helpful advice about heart disease, symptoms, prevention,
+        exercise, diet and when to consult a doctor.
 
-        # Symptoms
-        if "symptom" in msg or "pain" in msg or "chest" in msg or "breath" in msg:
-            reply = "Common heart disease symptoms include chest pain, fatigue, dizziness and shortness of breath."
+        User Question: {user_input}
+        """
 
-        # Prevention
-        elif "prevent" in msg or "avoid" in msg or "protect" in msg:
-            reply = "You can prevent heart disease by exercising regularly, eating healthy food, avoiding smoking and controlling cholesterol."
-
-        # Food / Diet
-        elif "food" in msg or "diet" in msg or "eat" in msg:
-            reply = "Heart healthy foods include fruits, vegetables, whole grains, nuts and fish. Avoid high cholesterol and fried foods."
-
-        # Exercise
-        elif "exercise" in msg or "workout" in msg or "fitness" in msg:
-            reply = "Regular physical activity like walking, jogging or cycling for 30 minutes a day improves heart health."
-
-        # Doctor
-        elif "doctor" in msg or "hospital" in msg or "treatment" in msg:
-            reply = "If you experience severe chest pain, breathing difficulty or dizziness, consult a doctor immediately."
-
-        # Greeting
-        elif "hi" in msg or "hello" in msg or "hey" in msg:
-            reply = "Hello! I am a Heart Health Assistant. You can ask me about symptoms, prevention, food or exercise."
-
-        # Default
-        else:
-            reply = "I can help with heart disease symptoms, prevention tips, diet and exercise advice."
+        response = model.generate_content(prompt)
+        reply = response.text
 
         st.session_state.messages.append(("bot", reply))
 
-    for role, msg in st.session_state.messages:
-        if role == "user":
+    for role,msg in st.session_state.messages:
+        if role=="user":
             st.chat_message("user").write(msg)
         else:
             st.chat_message("assistant").write(msg)
+
 
 
 # ---------------- LOGOUT ---------------- #
@@ -345,6 +336,7 @@ if st.session_state["page"]=="Logout":
     st.session_state["page"] = "Home"
     st.success("Logged out successfully ✅")
     st.stop()
+
 
 
 
