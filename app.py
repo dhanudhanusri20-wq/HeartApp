@@ -253,6 +253,36 @@ if st.session_state["page"] == "Bulk Prediction":
 # ---------------- DOCTOR DASHBOARD ---------------- #
 if st.session_state["page"]=="Doctor Dashboard":
     st.header("Doctor Dashboard")
+    # ---------------- CHATBOT ---------------- #
+if st.session_state["page"]=="Chatbot":
+
+    st.header("💬 Heart Health Chatbot")
+
+    if "messages" not in st.session_state:
+        st.session_state.messages = []
+
+    user_input = st.chat_input("Ask about heart health...")
+
+    if user_input:
+        st.session_state.messages.append(("user", user_input))
+
+        if "symptom" in user_input.lower():
+            reply = "Common symptoms include chest pain, fatigue, shortness of breath."
+        elif "prevent" in user_input.lower():
+            reply = "Healthy diet, regular exercise and avoiding smoking helps prevent heart disease."
+        elif "food" in user_input.lower():
+            reply = "Eat fruits, vegetables, whole grains and avoid high cholesterol foods."
+        else:
+            reply = "Please consult a doctor for detailed medical advice."
+
+        st.session_state.messages.append(("bot", reply))
+
+    for role,msg in st.session_state.messages:
+        if role=="user":
+            st.chat_message("user").write(msg)
+        else:
+            st.chat_message("assistant").write(msg)
+
     history_df = pd.read_sql_query("SELECT * FROM history", conn)
     st.write(history_df)
     if not history_df.empty:
@@ -276,6 +306,7 @@ if st.session_state["page"]=="Logout":
     st.session_state["page"] = "Home"
     st.success("Logged out successfully ✅")
     st.stop()
+
 
 
 
