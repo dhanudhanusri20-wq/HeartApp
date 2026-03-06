@@ -1,5 +1,5 @@
 import streamlit as st
-import google.generativeai as genai
+from google import genai   
 import joblib
 import numpy as np
 import pandas as pd
@@ -12,6 +12,7 @@ import hashlib
 from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer
 from reportlab.lib.styles import getSampleStyleSheet
 from reportlab.lib.pagesizes import A4
+
 
 # ---------------- PAGE CONFIG ---------------- #
 
@@ -347,6 +348,7 @@ if st.session_state.page == "Logout":
     st.session_state.logged_in = False
     st.success("Logged Out")
     st.stop()
+
 
 
 
