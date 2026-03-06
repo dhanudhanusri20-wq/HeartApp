@@ -1,9 +1,8 @@
 streamlit
 numpy
 pandas
+scikit-learn
 matplotlib
 joblib
-google-generativeai==0.3.2
 reportlab
-scikit-learn
-
+google-genai
