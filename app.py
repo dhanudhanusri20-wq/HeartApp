@@ -24,7 +24,8 @@ st.set_page_config(
 # ---------------- GEMINI API ---------------- #
 
 genai.configure(api_key=st.secrets["GEMINI_API_KEY"])
-gemini_model = genai.GenerativeModel("gemini-pro")
+
+# Only ONE model
 gemini_model = genai.GenerativeModel("gemini-1.5-flash")
 
 # ---------------- BACKGROUND IMAGE ---------------- #
@@ -32,9 +33,7 @@ gemini_model = genai.GenerativeModel("gemini-1.5-flash")
 def set_bg(image_file):
 
     try:
-
         with open(image_file, "rb") as f:
-
             data = f.read()
 
         encoded = base64.b64encode(data).decode()
@@ -53,7 +52,7 @@ def set_bg(image_file):
         )
 
     except:
-        pass
+        st.warning("Background image not found")
 
 set_bg("bg.jpg")
 
@@ -184,7 +183,6 @@ def generate_pdf(pid,name,age,result,score):
 if st.session_state.page == "Home":
 
     st.title("❤️ Heart Disease Prediction System")
-
     st.write("Use sidebar to access prediction, dashboard and AI chatbot.")
 
 # ---------------- SINGLE PREDICTION ---------------- #
@@ -221,7 +219,6 @@ if st.session_state.page == "Single Prediction":
         scaled = scaler.transform(data)
 
         prediction = model.predict(scaled)[0]
-
         probability = model.predict_proba(scaled)[0][1]
 
         result = "Heart Disease" if prediction==1 else "No Heart Disease"
@@ -249,14 +246,10 @@ if st.session_state.page == "Single Prediction":
         "application/pdf"
         )
 
-        # Graph
         fig, ax = plt.subplots()
-
         ax.plot(st.session_state.history, marker="o")
-
         ax.set_title("Risk Score Trend")
         ax.set_ylim(0,1)
-
         st.pyplot(fig)
 
 # ---------------- BULK PREDICTION ---------------- #
@@ -276,7 +269,6 @@ if st.session_state.page == "Bulk Prediction":
         scaled = scaler.transform(features)
 
         preds = model.predict(scaled)
-
         probs = model.predict_proba(scaled)[:,1]
 
         df["Prediction"] = preds
@@ -313,9 +305,10 @@ if st.session_state.page == "Doctor Dashboard":
         ax.set_ylim(0,1)
 
         st.pyplot(fig)
+
 # ---------------- CHATBOT ---------------- #
 
-if st.session_state["page"] == "Chatbot":
+if st.session_state.page == "Chatbot":
 
     st.header("💬 DD CardioBot")
 
@@ -327,31 +320,31 @@ if st.session_state["page"] == "Chatbot":
 
             prompt = f"""
 You are a heart health assistant.
-Explain symptoms, prevention, diet, exercise and medical advice in simple words.
+Explain symptoms, prevention, diet and exercise in simple words.
 
-User Question: {question}
+Question: {question}
 """
 
             response = gemini_model.generate_content(prompt)
 
-            st.success(response.text)
+            answer = response.text if hasattr(response,"text") else str(response)
+
+            st.success(answer)
 
         except Exception as e:
 
-            st.error("Gemini AI error")
+            st.error("⚠️ AI assistant temporarily unavailable")
             st.write(e)
-
-
 
 # ---------------- LOGOUT ---------------- #
 
 if st.session_state.page == "Logout":
 
     st.session_state.logged_in = False
-
     st.success("Logged Out")
-
     st.stop()
+
+
 
 
 
