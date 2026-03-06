@@ -315,31 +315,29 @@ if st.session_state.page == "Doctor Dashboard":
 if st.session_state["page"] == "Chatbot":
 
     st.header("💬 DD CardioBot")
-    st.write("Your AI Heart Health Assistant ❤️")
 
     question = st.text_input("Ask anything about heart health")
 
     if question:
 
-        if not ai_available:
-            st.error("⚠️ AI assistant temporarily unavailable.")
-        else:
-            try:
+        try:
 
-                prompt = f"""
+            prompt = f"""
 You are a heart health assistant.
 Explain symptoms, prevention, diet, exercise and medical advice in simple words.
 
 User Question: {question}
 """
 
-                response = gemini_model.generate_content(prompt)
+            response = gemini_model.generate_content(prompt)
 
-                st.success(response.text)
+            st.success(response.text)
 
-            except Exception as e:
+        except Exception as e:
 
-                st.error("⚠️ AI assistant temporarily unavailable.")
+            st.error("Gemini AI error")
+            st.write(e)
+
 
 
 # ---------------- LOGOUT ---------------- #
@@ -349,6 +347,7 @@ if st.session_state.page == "Logout":
     st.session_state.logged_in = False
     st.success("Logged Out")
     st.stop()
+
 
 
 
