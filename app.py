@@ -298,33 +298,46 @@ if st.session_state["page"] == "Chatbot":
     user_input = st.chat_input("Ask about heart health...")
 
     if user_input:
-
         st.session_state.messages.append(("user", user_input))
 
-        if "symptom" in user_input.lower():
-            reply = "Common heart disease symptoms include chest pain, fatigue, shortness of breath and dizziness."
+        msg = user_input.lower()
 
-        elif "prevent" in user_input.lower():
-            reply = "Heart disease prevention tips: eat healthy food, exercise regularly, avoid smoking and control cholesterol."
+        # Symptoms
+        if "symptom" in msg or "pain" in msg or "chest" in msg or "breath" in msg:
+            reply = "Common heart disease symptoms include chest pain, fatigue, dizziness and shortness of breath."
 
-        elif "food" in user_input.lower():
-            reply = "Heart healthy foods include fruits, vegetables, whole grains, nuts, fish and low-fat dairy."
+        # Prevention
+        elif "prevent" in msg or "avoid" in msg or "protect" in msg:
+            reply = "You can prevent heart disease by exercising regularly, eating healthy food, avoiding smoking and controlling cholesterol."
 
-        elif "exercise" in user_input.lower():
-            reply = "Regular walking, jogging, cycling and yoga are good for heart health."
+        # Food / Diet
+        elif "food" in msg or "diet" in msg or "eat" in msg:
+            reply = "Heart healthy foods include fruits, vegetables, whole grains, nuts and fish. Avoid high cholesterol and fried foods."
 
+        # Exercise
+        elif "exercise" in msg or "workout" in msg or "fitness" in msg:
+            reply = "Regular physical activity like walking, jogging or cycling for 30 minutes a day improves heart health."
+
+        # Doctor
+        elif "doctor" in msg or "hospital" in msg or "treatment" in msg:
+            reply = "If you experience severe chest pain, breathing difficulty or dizziness, consult a doctor immediately."
+
+        # Greeting
+        elif "hi" in msg or "hello" in msg or "hey" in msg:
+            reply = "Hello! I am a Heart Health Assistant. You can ask me about symptoms, prevention, food or exercise."
+
+        # Default
         else:
-            reply = "For serious symptoms please consult a doctor."
+            reply = "I can help with heart disease symptoms, prevention tips, diet and exercise advice."
 
         st.session_state.messages.append(("bot", reply))
 
     for role, msg in st.session_state.messages:
-
         if role == "user":
             st.chat_message("user").write(msg)
-
         else:
             st.chat_message("assistant").write(msg)
+
 
 # ---------------- LOGOUT ---------------- #
 if st.session_state["page"]=="Logout":
@@ -332,6 +345,7 @@ if st.session_state["page"]=="Logout":
     st.session_state["page"] = "Home"
     st.success("Logged out successfully ✅")
     st.stop()
+
 
 
 
