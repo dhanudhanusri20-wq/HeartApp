@@ -312,10 +312,9 @@ if st.session_state.page == "Doctor Dashboard":
         ax.set_ylim(0,1)
 
         st.pyplot(fig)
-
 # ---------------- CHATBOT ---------------- #
 
-if st.session_state.page == "Chatbot":
+if st.session_state["page"] == "Chatbot":
 
     st.header("💬 DD CardioBot")
 
@@ -334,14 +333,14 @@ User Question: {question}
 
             response = gemini_model.generate_content(prompt)
 
-            if response and hasattr(response,"text"):
-                st.success(response.text)
-            else:
-                st.warning("AI did not return a response.")
+            st.success(response.text)
 
         except Exception as e:
 
-            st.error("⚠️ Sorry, AI assistant is temporarily unavailable.")
+            st.error("Gemini AI error")
+            st.write(e)
+
+
 
 # ---------------- LOGOUT ---------------- #
 
@@ -352,6 +351,7 @@ if st.session_state.page == "Logout":
     st.success("Logged Out")
 
     st.stop()
+
 
 
 
