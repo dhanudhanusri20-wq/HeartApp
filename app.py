@@ -25,7 +25,7 @@ st.set_page_config(
 # ---------------- GEMINI API ---------------- #
 
 try:
-    genai.configure(api_key=st.secrets["GEMINI_API_KEY"])
+    client = genai.Client(api_key=st.secrets["GEMINI_API_KEY"])
     gemini_model = genai.GenerativeModel("gemini-pro")
     ai_available = True
 except:
@@ -331,7 +331,6 @@ User Question: {question}
 """
 
             response = gemini_model.generate_content(prompt)
-
             st.success(response.text)
 
         except Exception as e:
@@ -348,6 +347,7 @@ if st.session_state.page == "Logout":
     st.session_state.logged_in = False
     st.success("Logged Out")
     st.stop()
+
 
 
 
