@@ -349,6 +349,18 @@ if st.session_state["page"]=="Logout":
     st.success("Logged out successfully ✅")
     st.stop()
 
+# AI Assistant Section
+# -----------------------------
+
+st.header("💬 Heart Health AI Assistant")
+
+prompt = st.text_input("Ask a question about heart health")
+
+if prompt:
+    response = model.generate_content(prompt)
+    st.write(response.text)
+
+
 
 
 
