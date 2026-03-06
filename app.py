@@ -77,7 +77,10 @@ if not st.session_state["logged_in"]:
 
 # ---------------- SIDEBAR NAVIGATION ---------------- #
 st.sidebar.image("logo.png", width=150)
-st.session_state["page"] = st.sidebar.radio("Navigation", ["Home","Single Prediction","Bulk Prediction","Doctor Dashboard","Logout"])
+st.session_state["page"] = st.sidebar.radio(
+    "Navigation",
+    ["Home","Single Prediction","Bulk Prediction","Doctor Dashboard","Chatbot","Logout"]
+)
 
 # ---------------- LOAD MODEL ---------------- #
 model = joblib.load("heart_model.pkl")
@@ -248,13 +251,44 @@ if st.session_state["page"] == "Bulk Prediction":
         except Exception as e:
             st.error(f"Error reading CSV: {e}")
 
-
-
 # ---------------- DOCTOR DASHBOARD ---------------- #
-if st.session_state["page"]=="Doctor Dashboard":
-    st.header("Doctor Dashboard")
-    # ---------------- CHATBOT ---------------- #
-if st.session_state["page"]=="Chatbot":
+if st.session_state["page"] == "Doctor Dashboard":
+
+    st.header("👨‍⚕️ Doctor Dashboard")
+
+    history_df = pd.read_sql_query("SELECT * FROM history", conn)
+
+    if history_df.empty:
+        st.info("No patient prediction history available.")
+    else:
+        st.subheader("Patient Prediction History")
+        st.dataframe(history_df)
+
+        st.subheader("📊 Patient Risk Score Graph")
+
+        fig, ax = plt.subplots()
+
+        for pid in history_df["patient_id"].unique():
+            patient_data = history_df[history_df["patient_id"] == pid]
+
+            ax.plot(
+                patient_data.index,
+                patient_data["risk_score"],
+                marker='o',
+                label=f"Patient {pid}"
+            )
+
+        ax.set_xlabel("Record Number")
+        ax.set_ylabel("Risk Score")
+        ax.set_ylim(0,1)
+        ax.set_title("Heart Disease Risk Trend")
+        ax.legend()
+        ax.grid(True)
+
+        st.pyplot(fig)
+
+# ---------------- CHATBOT ---------------- #
+if st.session_state["page"] == "Chatbot":
 
     st.header("💬 Heart Health Chatbot")
 
@@ -264,41 +298,33 @@ if st.session_state["page"]=="Chatbot":
     user_input = st.chat_input("Ask about heart health...")
 
     if user_input:
+
         st.session_state.messages.append(("user", user_input))
 
         if "symptom" in user_input.lower():
-            reply = "Common symptoms include chest pain, fatigue, shortness of breath."
+            reply = "Common heart disease symptoms include chest pain, fatigue, shortness of breath and dizziness."
+
         elif "prevent" in user_input.lower():
-            reply = "Healthy diet, regular exercise and avoiding smoking helps prevent heart disease."
+            reply = "Heart disease prevention tips: eat healthy food, exercise regularly, avoid smoking and control cholesterol."
+
         elif "food" in user_input.lower():
-            reply = "Eat fruits, vegetables, whole grains and avoid high cholesterol foods."
+            reply = "Heart healthy foods include fruits, vegetables, whole grains, nuts, fish and low-fat dairy."
+
+        elif "exercise" in user_input.lower():
+            reply = "Regular walking, jogging, cycling and yoga are good for heart health."
+
         else:
-            reply = "Please consult a doctor for detailed medical advice."
+            reply = "For serious symptoms please consult a doctor."
 
         st.session_state.messages.append(("bot", reply))
 
-    for role,msg in st.session_state.messages:
-        if role=="user":
+    for role, msg in st.session_state.messages:
+
+        if role == "user":
             st.chat_message("user").write(msg)
+
         else:
             st.chat_message("assistant").write(msg)
-
-    history_df = pd.read_sql_query("SELECT * FROM history", conn)
-    st.write(history_df)
-    if not history_df.empty:
-        fig, ax = plt.subplots()
-        for pid in history_df["patient_id"].unique():
-            patient_data = history_df[history_df["patient_id"]==pid]
-            ax.plot(patient_data.index, patient_data["risk_score"], marker='o', label=pid)
-        ax.set_xlabel("Record Number")
-        ax.set_ylabel("Risk Score")
-        ax.set_ylim(0,1)
-        ax.set_title("Patient Risk Score Trends")
-        ax.legend()
-        ax.grid(True)
-        st.pyplot(fig)
-    else:
-        st.info("No prediction history available.")
 
 # ---------------- LOGOUT ---------------- #
 if st.session_state["page"]=="Logout":
@@ -306,6 +332,7 @@ if st.session_state["page"]=="Logout":
     st.session_state["page"] = "Home"
     st.success("Logged out successfully ✅")
     st.stop()
+
 
 
 
