@@ -330,7 +330,12 @@ Explain symptoms, prevention, diet, exercise and medical advice in simple words.
 User Question: {question}
 """
 
-            response = gemini_model.generate_content(prompt)
+           response = client.generate_text(
+    model="gemini-1.5",  # supported model
+    prompt=prompt
+)
+st.success(response.text)
+
             st.success(response.text)
 
         except Exception as e:
@@ -347,6 +352,7 @@ if st.session_state.page == "Logout":
     st.session_state.logged_in = False
     st.success("Logged Out")
     st.stop()
+
 
 
 
