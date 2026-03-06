@@ -13,14 +13,8 @@ from reportlab.lib.styles import getSampleStyleSheet
 from reportlab.lib.pagesizes import A4
 
 # ---------------- GEMINI AI ---------------- #
+from google import genai
 client = genai.Client(api_key=st.secrets["GEMINI_API_KEY"])
-
-response = client.generate_text(
-    model="gemini-1.5",  # supported model
-    prompt="Explain heart disease symptoms in simple words."
-)
-st.write(response.text)
-
 
 # ---------------- PAGE CONFIG ---------------- #
 st.set_page_config(
@@ -39,9 +33,9 @@ def set_bg(image_file):
             f"""
             <style>
             .stApp {{
-                background-image: url("data:image/jpg;base64,{encoded}");
-                background-size: cover;
-                background-position: center;
+            background-image: url("data:image/jpg;base64,{encoded}");
+            background-size: cover;
+            background-position: center;
             }}
             </style>
             """,
@@ -101,7 +95,7 @@ st.session_state.page = st.sidebar.radio(
     ["Home", "Single Prediction", "Bulk Prediction", "Doctor Dashboard", "Chatbot", "Logout"]
 )
 
-# ---------------- LOAD ML MODEL ---------------- #
+# ---------------- LOAD MODEL ---------------- #
 model = joblib.load("heart_model.pkl")
 scaler = joblib.load("scaler.pkl")
 
@@ -120,16 +114,14 @@ def generate_pdf(pid, name, age, result, score):
     doc = SimpleDocTemplate(buffer, pagesize=A4)
     styles = getSampleStyleSheet()
     elements = []
-
     elements.append(Paragraph("Heart Disease Prediction Report", styles["Title"]))
-    elements.append(Spacer(1, 20))
+    elements.append(Spacer(1,20))
     elements.append(Paragraph(f"Patient ID : {pid}", styles["Normal"]))
     elements.append(Paragraph(f"Patient Name : {name}", styles["Normal"]))
     elements.append(Paragraph(f"Age : {age}", styles["Normal"]))
     elements.append(Paragraph(f"Result : {result}", styles["Normal"]))
     elements.append(Paragraph(f"Risk Score : {score:.2f}", styles["Normal"]))
     elements.append(Paragraph(f"Advice : {ai_advice(score)}", styles["Normal"]))
-
     doc.build(elements)
     buffer.seek(0)
     return buffer
@@ -142,60 +134,49 @@ if st.session_state.page == "Home":
 # ---------------- SINGLE PREDICTION ---------------- #
 if st.session_state.page == "Single Prediction":
     st.header("Single Patient Prediction")
-
     patient_id = st.text_input("Patient ID")
     patient_name = st.text_input("Patient Name")
-
     age = st.number_input("Age", 20, 100, 50)
-    sex = st.selectbox("Sex", ["Male", "Female"])
-    cp = st.selectbox("Chest Pain Type", [0, 1, 2, 3])
+    sex = st.selectbox("Sex", ["Male","Female"])
+    cp = st.selectbox("Chest Pain Type", [0,1,2,3])
     trestbps = st.number_input("Resting BP", 80, 200, 120)
     chol = st.number_input("Cholesterol", 100, 400, 200)
-    fbs = st.selectbox("Fasting Blood Sugar >120", ["Yes", "No"])
-    restecg = st.selectbox("Rest ECG", [0, 1, 2])
+    fbs = st.selectbox("Fasting Blood Sugar >120", ["Yes","No"])
+    restecg = st.selectbox("Rest ECG", [0,1,2])
     thalach = st.number_input("Max Heart Rate", 60, 220, 150)
-    exang = st.selectbox("Exercise Angina", ["Yes", "No"])
+    exang = st.selectbox("Exercise Angina", ["Yes","No"])
     oldpeak = st.number_input("ST Depression", 0.0, 10.0, 1.0)
-    slope = st.selectbox("Slope", [0, 1, 2])
-    ca = st.selectbox("Major Vessels", [0, 1, 2, 3])
-    thal = st.selectbox("Thal", [1, 2, 3])
-
-    sex = 1 if sex == "Male" else 0
-    fbs = 1 if fbs == "Yes" else 0
-    exang = 1 if exang == "Yes" else 0
+    slope = st.selectbox("Slope", [0,1,2])
+    ca = st.selectbox("Major Vessels", [0,1,2,3])
+    thal = st.selectbox("Thal", [1,2,3])
+    sex = 1 if sex=="Male" else 0
+    fbs = 1 if fbs=="Yes" else 0
+    exang = 1 if exang=="Yes" else 0
 
     if st.button("Predict"):
-        data = np.array([[age, sex, cp, trestbps, chol, fbs, restecg, thalach, exang, oldpeak, slope, ca, thal]])
+        data = np.array([[age,sex,cp,trestbps,chol,fbs,restecg,thalach,exang,oldpeak,slope,ca,thal]])
         scaled = scaler.transform(data)
         prediction = model.predict(scaled)[0]
         probability = model.predict_proba(scaled)[0][1]
-        result = "Heart Disease" if prediction == 1 else "No Heart Disease"
-
+        result = "Heart Disease" if prediction==1 else "No Heart Disease"
         st.success(result)
         st.info(f"Risk Score : {probability:.2f}")
         st.info(ai_advice(probability))
-
         st.session_state.history.append(probability)
-
+        # Save to DB
         c.execute(
-            "INSERT INTO history (patient_id, patient_name, prediction, risk_score) VALUES (?,?,?,?)",
+            "INSERT INTO history (patient_id,patient_name,prediction,risk_score) VALUES (?,?,?,?)",
             (patient_id, patient_name, result, probability)
         )
         conn.commit()
-
+        # PDF download
         pdf = generate_pdf(patient_id, patient_name, age, result, probability)
-        st.download_button(
-            "Download Report",
-            pdf,
-            f"{patient_name}_report.pdf",
-            "application/pdf"
-        )
-
-        # Risk Score Trend Graph
+        st.download_button("Download Report", pdf, f"{patient_name}_report.pdf", "application/pdf")
+        # Graph
         fig, ax = plt.subplots()
         ax.plot(st.session_state.history, marker="o")
         ax.set_title("Risk Score Trend")
-        ax.set_ylim(0, 1)
+        ax.set_ylim(0,1)
         st.pyplot(fig)
 
 # ---------------- BULK PREDICTION ---------------- #
@@ -204,20 +185,15 @@ if st.session_state.page == "Bulk Prediction":
     file = st.file_uploader("Upload CSV", type="csv")
     if file:
         df = pd.read_csv(file)
-        features = df.iloc[:, 2:]
+        features = df.iloc[:,2:]
         scaled = scaler.transform(features)
         preds = model.predict(scaled)
-        probs = model.predict_proba(scaled)[:, 1]
+        probs = model.predict_proba(scaled)[:,1]
         df["Prediction"] = preds
         df["Risk Score"] = probs
         st.dataframe(df)
         csv = df.to_csv(index=False).encode()
-        st.download_button(
-            "Download Results",
-            csv,
-            "results.csv",
-            "text/csv"
-        )
+        st.download_button("Download Results", csv, "results.csv", "text/csv")
 
 # ---------------- DOCTOR DASHBOARD ---------------- #
 if st.session_state.page == "Doctor Dashboard":
@@ -228,7 +204,7 @@ if st.session_state.page == "Doctor Dashboard":
         fig, ax = plt.subplots()
         ax.plot(data["risk_score"], marker="o")
         ax.set_title("Risk Score Trend")
-        ax.set_ylim(0, 1)
+        ax.set_ylim(0,1)
         st.pyplot(fig)
 
 # ---------------- CHATBOT ---------------- #
@@ -237,19 +213,13 @@ if st.session_state.page == "Chatbot":
     question = st.text_input("Ask anything about heart health")
     if question:
         try:
-            prompt = f"""
-You are a heart health assistant.
-Explain symptoms, prevention, diet, exercise and medical advice in simple words.
-
-User Question: {question}
-"""
             response = client.generate_text(
-                model="gemini-1.5",   # supported model
-                prompt=prompt
+                model="gemini-1.5",  # supported model
+                prompt=f"Explain heart disease symptoms, prevention, diet, exercise, and advice in simple words. User question: {question}"
             )
             st.success(response.text)
         except Exception as e:
-            st.error("Gemini AI temporarily unavailable.")
+            st.error("⚠️ AI assistant temporarily unavailable.")
             st.write(e)
 
 # ---------------- LOGOUT ---------------- #
@@ -257,13 +227,6 @@ if st.session_state.page == "Logout":
     st.session_state.logged_in = False
     st.success("Logged Out")
     st.stop()
-
-
-
-
-
-
-
 
 
 
