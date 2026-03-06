@@ -1,9 +1,13 @@
+import streamlit as st
 import google.generativeai as genai
 
+# Configure Gemini API
 genai.configure(api_key=st.secrets["GEMINI_API_KEY"])
 
+# Load Gemini Model
 model = genai.GenerativeModel("gemini-1.5-flash")
-import streamlit as st
+
+# Other libraries
 import joblib
 import numpy as np
 import pandas as pd
@@ -12,12 +16,12 @@ import base64
 import io
 import sqlite3
 import hashlib
-# PDF
+
+# PDF Libraries
 from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer
 from reportlab.lib.styles import getSampleStyleSheet
 from reportlab.lib.pagesizes import A4
 from reportlab.lib.units import inch
-
 
 # ---------------- PAGE CONFIG ---------------- #
 st.set_page_config(
@@ -347,6 +351,7 @@ if st.session_state["page"]=="Logout":
     st.session_state["page"] = "Home"
     st.success("Logged out successfully ✅")
     st.stop()
+
 
 
 
