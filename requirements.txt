@@ -1,10 +1,8 @@
 streamlit
-joblib
-numpy 
+numpy
 pandas
 matplotlib
-scikit-learn
-reportlab
-fpdf
+joblib
 google-generativeai
-
+reportlab
+scikit-learn
