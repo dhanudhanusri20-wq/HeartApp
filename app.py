@@ -233,16 +233,31 @@ if st.session_state.page == "Chatbot":
 
     # Sidebar with sample questions
     st.sidebar.subheader("Sample Questions")
-    sample_questions = [
-        "What are the symptoms of heart disease?",
-        "How can I prevent a heart attack?",
-        "What foods are good for heart health?",
-        "How much exercise is recommended for heart patients?",
-        "When should I see a doctor for chest pain?",
-        "What is cholesterol and why is it dangerous?",
-        "What are the risk factors for heart disease?",
-        "Can stress cause heart problems?"
-    ]
+       sample_questions = [
+    "What are the symptoms of heart disease?",
+    "How can I prevent a heart attack?",
+    "What foods are good for heart health?",
+    "How much exercise is recommended for heart patients?",
+    "When should I see a doctor for chest pain?",
+    "What is cholesterol and why is it dangerous?",
+    "What are the risk factors for heart disease?",
+    "Can stress cause heart problems?",
+    "What is high blood pressure?",
+    "How does smoking affect the heart?",
+    "What is a healthy diet for heart patients?",
+    "How can I lower my cholesterol naturally?",
+    "Is walking good for heart health?",
+    "How much sleep is good for heart health?",
+    "Can diabetes increase heart disease risk?",
+    "What are early signs of a heart attack?",
+    "What foods should heart patients avoid?",
+    "How does obesity affect heart health?",
+    "How often should I check my blood pressure?",
+    "Can regular exercise reduce heart disease risk?",
+    "What drinks are good for heart health?",
+    "Is stress management important for heart health?"
+]
+
     selected_question = st.sidebar.selectbox("Pick a question", sample_questions)
 
     # Input box
@@ -259,6 +274,7 @@ if st.session_state.page == "Logout":
     st.session_state.logged_in = False
     st.success("Logged Out")
     st.stop()
+
 
 
 
