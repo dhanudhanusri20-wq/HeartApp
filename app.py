@@ -1,4 +1,5 @@
 import streamlit as st
+import openai   # <- Place this here, at the top with other imports
 import joblib
 import numpy as np
 import pandas as pd
@@ -12,10 +13,10 @@ from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer
 from reportlab.lib.styles import getSampleStyleSheet
 from reportlab.lib.pagesizes import A4
 
-# ---------------- GEMINI AI ---------------- #
-import openai
 
-openai.api_key = st.secrets["OPENAI_API_KEY"]
+# Set your OpenAI API key
+openai.api_key = st.secrets["OPENAI_API_KEY"]   # <- Place this here, immediately after imports
+
 # ---------------- PAGE CONFIG ---------------- #
 st.set_page_config(
     page_title="Heart Disease Prediction",
@@ -208,29 +209,33 @@ if st.session_state.page == "Doctor Dashboard":
         st.pyplot(fig)
 
 # ---------------- CHATBOT ---------------- #
+
 if st.session_state["page"] == "Chatbot":
 
     st.header("💬 DD CardioBot (OpenAI)")
 
-    def get_ai_response(question):
-    response = openai.chat.completions.create(
-        model="gpt-3.5-turbo",
-        messages=[
-            {"role": "system", "content": "You are a helpful heart health assistant."},
-            {"role": "user", "content": question}
-        ],
-        max_tokens=300
-    )
-    return response.choices[0].message.content
+    question = st.text_input("Ask anything about heart health")
 
-# In Streamlit
-if question:
-    try:
-        answer = get_ai_response(question)
-        st.success(answer)
-    except Exception as e:
-        st.error("AI assistant temporarily unavailable.")
-        st.write(e)
+    if question:   # <-- only run if user enters a question
+
+        try:
+
+            # Call OpenAI Chat API
+            response = openai.chat.completions.create(
+                model="gpt-3.5-turbo",   # make sure key is set at top
+                messages=[
+                    {"role": "system", "content": "You are a helpful heart health assistant."},
+                    {"role": "user", "content": question}
+                ],
+                max_tokens=300
+            )
+
+            answer = response.choices[0].message["content"]
+            st.success(answer)
+
+        except Exception as e:
+            st.error("AI assistant temporarily unavailable.")
+            st.write(e)
 
 
 # ---------------- LOGOUT ---------------- #
@@ -238,6 +243,7 @@ if st.session_state.page == "Logout":
     st.session_state.logged_in = False
     st.success("Logged Out")
     st.stop()
+
 
 
 
