@@ -230,17 +230,36 @@ if st.session_state.page == "Doctor Dashboard":
 # ---------------- CHATBOT ---------------- #
 if st.session_state.page == "Chatbot":
     st.header("💬 DD CardioBot (Offline)")
-    question = st.text_input("Ask anything about heart health")
+
+    # Sidebar with sample questions
+    st.sidebar.subheader("Sample Questions")
+    sample_questions = [
+        "What are the symptoms of heart disease?",
+        "How can I prevent a heart attack?",
+        "What foods are good for heart health?",
+        "How much exercise is recommended for heart patients?",
+        "When should I see a doctor for chest pain?",
+        "What is cholesterol and why is it dangerous?",
+        "What are the risk factors for heart disease?",
+        "Can stress cause heart problems?"
+    ]
+    selected_question = st.sidebar.selectbox("Pick a question", sample_questions)
+
+    # Input box
+    question = st.text_input("Ask anything about heart health", value=selected_question)
+
     if question:
         answer = ask_chatbot(question)
         st.markdown(f"**You:** {question}")
         st.markdown(f"**DD CardioBot:** {answer}")
+
 
 # ---------------- LOGOUT ---------------- #
 if st.session_state.page == "Logout":
     st.session_state.logged_in = False
     st.success("Logged Out")
     st.stop()
+
 
 
 
