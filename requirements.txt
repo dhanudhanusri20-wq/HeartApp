@@ -1,10 +1,9 @@
 streamlit
 numpy
 pandas
-scikit-learn
 matplotlib
+scikit-learn
 joblib
 reportlab
-openai
-
-
+transformers
+torch
