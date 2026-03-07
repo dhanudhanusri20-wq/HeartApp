@@ -1,4 +1,40 @@
 import streamlit as st
+# ---------------- CUSTOM UI STYLE ---------------- #
+st.markdown("""
+<style>
+
+.main {
+    background-color: #f5f7fa;
+}
+
+h1, h2, h3 {
+    color: #1f4e79;
+}
+
+.stButton>button {
+    background-color: #1f77b4;
+    color: white;
+    border-radius: 10px;
+    height: 3em;
+    width: 100%;
+}
+
+.stButton>button:hover {
+    background-color: #125a94;
+    color: white;
+}
+
+.stTextInput>div>div>input {
+    border-radius: 8px;
+}
+
+.stNumberInput>div>div>input {
+    border-radius: 8px;
+}
+
+</style>
+""", unsafe_allow_html=True)
+
 import joblib
 import numpy as np
 import pandas as pd
@@ -378,6 +414,7 @@ if st.session_state.page == "Logout":
     st.session_state.logged_in = False
     st.success("Logged Out")
     st.stop()
+
 
 
 
