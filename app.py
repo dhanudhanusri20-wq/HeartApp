@@ -13,9 +13,9 @@ from reportlab.lib.styles import getSampleStyleSheet
 from reportlab.lib.pagesizes import A4
 
 # ---------------- GEMINI AI ---------------- #
-from google import genai
-client = genai.Client(api_key=st.secrets["GEMINI_API_KEY"])
+import openai
 
+openai.api_key = st.secrets["OPENAI_API_KEY"]
 # ---------------- PAGE CONFIG ---------------- #
 st.set_page_config(
     page_title="Heart Disease Prediction",
@@ -227,6 +227,7 @@ if st.session_state.page == "Logout":
     st.session_state.logged_in = False
     st.success("Logged Out")
     st.stop()
+
 
 
 
