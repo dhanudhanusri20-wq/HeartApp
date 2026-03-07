@@ -212,25 +212,25 @@ if st.session_state["page"] == "Chatbot":
 
     st.header("💬 DD CardioBot (OpenAI)")
 
-    question = st.text_input("Ask anything about heart health")
+    def get_ai_response(question):
+    response = openai.chat.completions.create(
+        model="gpt-3.5-turbo",
+        messages=[
+            {"role": "system", "content": "You are a helpful heart health assistant."},
+            {"role": "user", "content": question}
+        ],
+        max_tokens=300
+    )
+    return response.choices[0].message.content
 
-    if question:
-        try:
-            response = openai.ChatCompletion.create(
-                model="gpt-3.5-turbo",
-                messages=[
-                    {"role": "system", "content": "You are a helpful heart health assistant."},
-                    {"role": "user", "content": question}
-                ],
-                max_tokens=300
-            )
-
-            answer = response['choices'][0]['message']['content']
-            st.success(answer)
-
-        except Exception as e:
-            st.error("AI assistant temporarily unavailable.")
-            st.write(e)
+# In Streamlit
+if question:
+    try:
+        answer = get_ai_response(question)
+        st.success(answer)
+    except Exception as e:
+        st.error("AI assistant temporarily unavailable.")
+        st.write(e)
 
 
 # ---------------- LOGOUT ---------------- #
@@ -238,6 +238,7 @@ if st.session_state.page == "Logout":
     st.session_state.logged_in = False
     st.success("Logged Out")
     st.stop()
+
 
 
 
