@@ -215,19 +215,54 @@ if st.session_state.page == "Doctor Dashboard":
         ax.set_ylim(0,1)
         st.pyplot(fig)
 
-# ---------------- CHATBOT ---------------- #
-if st.session_state.page == "Chatbot":
+# ---------------- CHATBOT (OFFLINE) ---------------- #
+if st.session_state["page"] == "Chatbot":
+
     st.header("💬 DD CardioBot (Offline)")
-    question = st.text_input("Ask anything about heart health")
-    if question:
-        answer = ask_chatbot(question)
-        st.success(answer)
+
+    user_question = st.text_input("Ask anything about heart health:")
+
+    if user_question:
+
+        try:
+            from transformers import AutoModelForSeq2SeqLM, AutoTokenizer
+
+            # Load model and tokenizer once (can move outside if you want faster performance)
+            model_name = "google/flan-t5-small"
+            tokenizer = AutoTokenizer.from_pretrained(model_name)
+            model = AutoModelForSeq2SeqLM.from_pretrained(model_name)
+
+            # Prepare prompt
+            prompt = f"""
+            You are a friendly heart health assistant. 
+            Answer in simple words about symptoms, causes, prevention, diet, exercise, and advice.
+            Question: {user_question}
+            """
+
+            # Tokenize and generate
+            inputs = tokenizer(prompt, return_tensors="pt", max_length=512, truncation=True)
+            outputs = model.generate(
+                **inputs,
+                max_new_tokens=250,     # adjust for longer answers
+                do_sample=True,         # makes answer more natural
+                top_p=0.95,
+                temperature=0.7
+            )
+
+            answer = tokenizer.decode(outputs[0], skip_special_tokens=True)
+
+            st.success(answer)
+
+        except Exception as e:
+            st.error("⚠️ Error in generating response.")
+            st.write(e)
 
 # ---------------- LOGOUT ---------------- #
 if st.session_state.page == "Logout":
     st.session_state.logged_in = False
     st.success("Logged Out")
     st.stop()
+
 
 
 
