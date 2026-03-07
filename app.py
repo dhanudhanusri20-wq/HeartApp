@@ -151,53 +151,123 @@ if st.session_state.page == "Home":
 
 # ---------------- SINGLE PREDICTION ---------------- #
 if st.session_state.page == "Single Prediction":
+
     st.header("Single Patient Prediction")
+
     patient_id = st.text_input("Patient ID")
     patient_name = st.text_input("Patient Name")
-    age = st.number_input("Age",20,100,50)
-    sex = st.selectbox("Sex",["Male","Female"])
-    cp = st.selectbox("Chest Pain Type",[0,1,2,3])
-    trestbps = st.number_input("Resting BP",80,200,120)
-    chol = st.number_input("Cholesterol",100,400,200)
-    fbs = st.selectbox("Fasting Blood Sugar >120",["Yes","No"])
-    restecg = st.selectbox("Rest ECG",[0,1,2])
-    thalach = st.number_input("Max Heart Rate",60,220,150)
-    exang = st.selectbox("Exercise Angina",["Yes","No"])
-    oldpeak = st.number_input("ST Depression",0.0,10.0,1.0)
-    slope = st.selectbox("Slope",[0,1,2])
-    ca = st.selectbox("Major Vessels",[0,1,2,3])
-    thal = st.selectbox("Thal",[1,2,3])
 
-    sex = 1 if sex=="Male" else 0
-    fbs = 1 if fbs=="Yes" else 0
-    exang = 1 if exang=="Yes" else 0
+    age = st.number_input("Age", 20, 100, 50)
+    sex = st.selectbox("Sex", ["Male", "Female"])
+    cp = st.selectbox("Chest Pain Type", [0,1,2,3])
+    trestbps = st.number_input("Resting Blood Pressure", 80, 200, 120)
+    chol = st.number_input("Cholesterol", 100, 400, 200)
+    fbs = st.selectbox("Fasting Blood Sugar >120", ["Yes", "No"])
+    restecg = st.selectbox("Rest ECG", [0,1,2])
+    thalach = st.number_input("Max Heart Rate", 60, 220, 150)
+    exang = st.selectbox("Exercise Induced Angina", ["Yes", "No"])
+    oldpeak = st.number_input("ST Depression", 0.0, 10.0, 1.0)
+    slope = st.selectbox("Slope", [0,1,2])
+    ca = st.selectbox("Major Vessels", [0,1,2,3])
+    thal = st.selectbox("Thal", [1,2,3])
+
+    # Convert categorical values
+    sex = 1 if sex == "Male" else 0
+    fbs = 1 if fbs == "Yes" else 0
+    exang = 1 if exang == "Yes" else 0
 
     if st.button("Predict"):
-        data = np.array([[age,sex,cp,trestbps,chol,fbs,restecg,thalach,exang,oldpeak,slope,ca,thal]])
+
+        data = np.array([[age,sex,cp,trestbps,chol,fbs,restecg,
+                          thalach,exang,oldpeak,slope,ca,thal]])
+
         scaled = scaler.transform(data)
+
         prediction = model.predict(scaled)[0]
+
         probability = model.predict_proba(scaled)[0][1]
-        result = "Heart Disease" if prediction==1 else "No Heart Disease"
+
+        result = "Heart Disease Detected" if prediction == 1 else "No Heart Disease"
+
         st.success(result)
-        st.info(f"Risk Score : {probability:.2f}")
-        st.info(ai_advice(probability))
+
+        # ---------------- RISK METER ---------------- #
+        st.subheader("Risk Level")
+
+        st.progress(probability)
+
+        st.write(f"Risk Score: {probability*100:.1f}%")
+
+        if probability < 0.3:
+            st.success("Low Risk")
+        elif probability < 0.7:
+            st.warning("Moderate Risk")
+        else:
+            st.error("High Risk")
+
+        # ---------------- AI HEALTH ADVICE ---------------- #
+        st.subheader("Health Advice")
+
+        if probability < 0.3:
+            advice = "Maintain a healthy lifestyle with balanced diet and regular exercise."
+        elif probability < 0.7:
+            advice = "Monitor your health, improve diet, and consult a doctor regularly."
+        else:
+            advice = "High risk detected. Please consult a cardiologist immediately."
+
+        st.info(advice)
+
+        # ---------------- PROBABILITY GRAPH ---------------- #
+        st.subheader("Prediction Probability")
+
+        labels = ["No Heart Disease", "Heart Disease"]
+        values = model.predict_proba(scaled)[0]
+
+        fig, ax = plt.subplots()
+
+        ax.bar(labels, values)
+
+        ax.set_ylabel("Probability")
+        ax.set_title("Model Confidence")
+
+        st.pyplot(fig)
+
+        # ---------------- SAVE HISTORY ---------------- #
         st.session_state.history.append(probability)
 
         c.execute(
-            "INSERT INTO history (patient_id,patient_name,prediction,risk_score) VALUES (?,?,?,?)",
-            (patient_id,patient_name,result,probability)
+            "INSERT INTO history (patient_id, patient_name, prediction, risk_score) VALUES (?,?,?,?)",
+            (patient_id, patient_name, result, probability)
         )
+
         conn.commit()
 
-        pdf = generate_pdf(patient_id,patient_name,age,result,probability)
-        st.download_button("Download Report", pdf, f"{patient_name}_report.pdf", "application/pdf")
+        # ---------------- RISK TREND GRAPH ---------------- #
+        st.subheader("Risk Score Trend")
 
-        # Graph
-        fig, ax = plt.subplots()
-        ax.plot(st.session_state.history, marker="o")
-        ax.set_title("Risk Score Trend")
-        ax.set_ylim(0,1)
-        st.pyplot(fig)
+        fig2, ax2 = plt.subplots()
+
+        ax2.plot(st.session_state.history, marker="o")
+
+        ax2.set_ylim(0,1)
+
+        ax2.set_xlabel("Predictions")
+        ax2.set_ylabel("Risk Score")
+
+        ax2.set_title("Patient Risk Trend")
+
+        st.pyplot(fig2)
+
+        # ---------------- PDF REPORT ---------------- #
+        pdf = generate_pdf(patient_id, patient_name, age, result, probability)
+
+        st.download_button(
+            "Download Report",
+            pdf,
+            f"{patient_name}_report.pdf",
+            "application/pdf"
+        )
+
 
 # ---------------- BULK PREDICTION ---------------- #
 if st.session_state.page == "Bulk Prediction":
@@ -275,6 +345,7 @@ if st.session_state.page == "Logout":
     st.session_state.logged_in = False
     st.success("Logged Out")
     st.stop()
+
 
 
 
