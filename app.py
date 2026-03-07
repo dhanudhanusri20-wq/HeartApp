@@ -214,18 +214,28 @@ if st.session_state.page == "Bulk Prediction":
         st.dataframe(df)
         csv = df.to_csv(index=False).encode()
         st.download_button("Download Results", csv, "results.csv", "text/csv")
-
 # ---------------- DOCTOR DASHBOARD ---------------- #
 if st.session_state.page == "Doctor Dashboard":
+
     st.header("Doctor Dashboard")
+
     data = pd.read_sql_query("SELECT * FROM history", conn)
-    st.dataframe(data)
-    if not data.empty:
-        fig, ax = plt.subplots()
-        ax.plot(data["risk_score"], marker="o")
-        ax.set_title("Risk Score Trend")
-        ax.set_ylim(0,1)
-        st.pyplot(fig)
+
+    # Search box
+    search = st.text_input("Search Patient (ID or Name)")
+
+    if search:
+        filtered = data[
+            data["patient_id"].astype(str).str.contains(search, case=False) |
+            data["patient_name"].astype(str).str.contains(search, case=False)
+        ]
+    else:
+        filtered = data
+
+    st.subheader("Patient History")
+
+    st.dataframe(filtered)
+
 
 # ---------------- CHATBOT ---------------- #
 if st.session_state.page == "Chatbot":
@@ -265,6 +275,7 @@ if st.session_state.page == "Logout":
     st.session_state.logged_in = False
     st.success("Logged Out")
     st.stop()
+
 
 
 
