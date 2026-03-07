@@ -229,10 +229,12 @@ if st.session_state.page == "Doctor Dashboard":
 
 # ---------------- CHATBOT ---------------- #
 if st.session_state.page == "Chatbot":
+
     st.header("💬 DD CardioBot (Offline)")
 
-    # Sidebar with sample questions
+    # Sample questions in sidebar
     st.sidebar.subheader("Sample Questions")
+
     sample_questions = [
     "What are the symptoms of heart disease?",
     "How can I prevent a heart attack?",
@@ -258,23 +260,46 @@ if st.session_state.page == "Chatbot":
     "Is stress management important for heart health?"
 ]
 
-       
-    selected_question = st.sidebar.selectbox("Pick a question", sample_questions)
+    selected_question = st.sidebar.selectbox("Choose a question", sample_questions)
 
-    # Input box
-    question = st.text_input("Ask anything about heart health", value=selected_question)
+    # Chat history storage
+    if "messages" not in st.session_state:
+        st.session_state.messages = []
 
-    if question:
-        answer = ask_chatbot(question)
-        st.markdown(f"**You:** {question}")
-        st.markdown(f"**DD CardioBot:** {answer}")
+    # Show chat history
+    for message in st.session_state.messages:
+        with st.chat_message(message["role"]):
+            st.markdown(message["content"])
 
+    # Chat input box
+    prompt = st.chat_input("Ask something about heart health...")
+
+    # If user selects a sidebar question
+    if selected_question and st.button("Ask Selected Question"):
+        prompt = selected_question
+
+    if prompt:
+        # Show user message
+        st.session_state.messages.append({"role": "user", "content": prompt})
+
+        with st.chat_message("user"):
+            st.markdown(prompt)
+
+        # Get chatbot response
+        answer = ask_chatbot(prompt)
+
+        # Show bot message
+        with st.chat_message("assistant"):
+            st.markdown(answer)
+
+        st.session_state.messages.append({"role": "assistant", "content": answer})
 
 # ---------------- LOGOUT ---------------- #
 if st.session_state.page == "Logout":
     st.session_state.logged_in = False
     st.success("Logged Out")
     st.stop()
+
 
 
 
