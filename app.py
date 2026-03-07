@@ -70,10 +70,11 @@ def ask_chatbot(question):
 
 # ---------------- PAGE CONFIG ---------------- #
 st.set_page_config(
-    page_title="Heart Disease Prediction",
-    page_icon="❤️",
-    layout="centered"
+    page_title="Heart Disease Prediction System",
+    page_icon="logo.png",
+    layout="wide"
 )
+
 
 # ---------------- BACKGROUND IMAGE ---------------- #
 def set_bg(image_file):
@@ -143,11 +144,11 @@ if not st.session_state.logged_in:
     st.stop()
 
 # ---------------- SIDEBAR ---------------- #
+st.sidebar.image("logo.png", width=120)
+st.sidebar.title("Heart AI System")
+
 st.sidebar.title("Navigation")
-st.session_state.page = st.sidebar.radio(
-    "Go to",
-    ["Home", "Single Prediction", "Bulk Prediction", "Doctor Dashboard", "Chatbot", "Logout"]
-)
+
 
 # ---------------- LOAD MODEL ---------------- #
 model = joblib.load("heart_model.pkl")
@@ -414,6 +415,7 @@ if st.session_state.page == "Logout":
     st.session_state.logged_in = False
     st.success("Logged Out")
     st.stop()
+
 
 
 
