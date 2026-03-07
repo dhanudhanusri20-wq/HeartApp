@@ -232,73 +232,40 @@ if st.session_state.page == "Chatbot":
 
     st.header("💬 DD CardioBot (Offline)")
 
-    # Sample questions in sidebar
-    st.sidebar.subheader("Sample Questions")
-
-    sample_questions = [
-    "What are the symptoms of heart disease?",
-    "How can I prevent a heart attack?",
-    "What foods are good for heart health?",
-    "How much exercise is recommended for heart patients?",
-    "When should I see a doctor for chest pain?",
-    "What is cholesterol and why is it dangerous?",
-    "What are the risk factors for heart disease?",
-    "Can stress cause heart problems?",
-    "What is high blood pressure?",
-    "How does smoking affect the heart?",
-    "What is a healthy diet for heart patients?",
-    "How can I lower my cholesterol naturally?",
-    "Is walking good for heart health?",
-    "How much sleep is good for heart health?",
-    "Can diabetes increase heart disease risk?",
-    "What are early signs of a heart attack?",
-    "What foods should heart patients avoid?",
-    "How does obesity affect heart health?",
-    "How often should I check my blood pressure?",
-    "Can regular exercise reduce heart disease risk?",
-    "What drinks are good for heart health?",
-    "Is stress management important for heart health?"
-]
-
-    selected_question = st.sidebar.selectbox("Choose a question", sample_questions)
-
-    # Chat history storage
+    # Step 1: Create memory for chat
     if "messages" not in st.session_state:
         st.session_state.messages = []
 
-    # Show chat history
+    # Step 2: Show previous messages (ADD YOUR CODE HERE)
     for message in st.session_state.messages:
         with st.chat_message(message["role"]):
             st.markdown(message["content"])
 
-    # Chat input box
+    # Step 3: Chat input box
     prompt = st.chat_input("Ask something about heart health...")
 
-    # If user selects a sidebar question
-    if selected_question and st.button("Ask Selected Question"):
-        prompt = selected_question
-
+    # Step 4: When user asks question
     if prompt:
-        # Show user message
+
         st.session_state.messages.append({"role": "user", "content": prompt})
 
         with st.chat_message("user"):
             st.markdown(prompt)
 
-        # Get chatbot response
         answer = ask_chatbot(prompt)
 
-        # Show bot message
         with st.chat_message("assistant"):
             st.markdown(answer)
 
         st.session_state.messages.append({"role": "assistant", "content": answer})
+
 
 # ---------------- LOGOUT ---------------- #
 if st.session_state.page == "Logout":
     st.session_state.logged_in = False
     st.success("Logged Out")
     st.stop()
+
 
 
 
