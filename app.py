@@ -233,7 +233,7 @@ if st.session_state.page == "Chatbot":
 
     # Sidebar with sample questions
     st.sidebar.subheader("Sample Questions")
-       sample_questions = [
+    sample_questions = [
     "What are the symptoms of heart disease?",
     "How can I prevent a heart attack?",
     "What foods are good for heart health?",
@@ -258,6 +258,7 @@ if st.session_state.page == "Chatbot":
     "Is stress management important for heart health?"
 ]
 
+       
     selected_question = st.sidebar.selectbox("Pick a question", sample_questions)
 
     # Input box
@@ -274,6 +275,7 @@ if st.session_state.page == "Logout":
     st.session_state.logged_in = False
     st.success("Logged Out")
     st.stop()
+
 
 
 
