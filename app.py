@@ -535,7 +535,8 @@ if st.session_state.page == "Chatbot":
                 with st.chat_message("user"):
                     st.markdown(q)
 
-                answer = ask_chatbot(q)
+                answer = faq_answers.get(q, ask_chatbot(q))
+
 
                 with st.chat_message("assistant"):
                     st.markdown(answer)
@@ -572,6 +573,7 @@ if st.session_state.page == "Logout":
     st.session_state.logged_in = False
     st.success("Logged Out")
     st.stop()
+
 
 
 
