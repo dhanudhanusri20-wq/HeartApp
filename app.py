@@ -7,6 +7,7 @@ import base64
 import io
 import sqlite3
 import hashlib
+from datetime import datetime
 
 from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer
 from reportlab.lib.styles import getSampleStyleSheet
@@ -15,23 +16,28 @@ from reportlab.lib.pagesizes import A4
 # ---------------- Hugging Face Local Chatbot ---------------- #
 from transformers import AutoModelForSeq2SeqLM, AutoTokenizer
 
-# Load a lightweight summarization/QA model for local inference
 @st.cache_resource
 def load_model():
     tokenizer = AutoTokenizer.from_pretrained("google/flan-t5-small")
     model = AutoModelForSeq2SeqLM.from_pretrained("google/flan-t5-small")
     return tokenizer, model
 
-tokenizer, model = load_model()
+tokenizer, chatbot_model = load_model()
 
 def ask_chatbot(question):
-    inputs = tokenizer(f"Answer simply: {question}", return_tensors="pt")
-    outputs = model.generate(**inputs, max_new_tokens=150)
+    today = datetime.now().strftime("%B %d, %Y")
+    prompt = f"Today is {today}. Answer simply and accurately: {question}"
+    inputs = tokenizer(prompt, return_tensors="pt")
+    outputs = chatbot_model.generate(**inputs, max_new_tokens=150)
     answer = tokenizer.decode(outputs[0], skip_special_tokens=True)
     return answer
 
 # ---------------- PAGE CONFIG ---------------- #
-st.set_page_config(page_title="Heart Disease Prediction", page_icon="❤️", layout="centered")
+st.set_page_config(
+    page_title="Heart Disease Prediction",
+    page_icon="❤️",
+    layout="centered"
+)
 
 # ---------------- BACKGROUND IMAGE ---------------- #
 def set_bg(image_file):
@@ -43,9 +49,9 @@ def set_bg(image_file):
             f"""
             <style>
             .stApp {{
-            background-image: url("data:image/jpg;base64,{encoded}");
-            background-size: cover;
-            background-position: center;
+                background-image: url("data:image/jpg;base64,{encoded}");
+                background-size: cover;
+                background-position: center;
             }}
             </style>
             """,
@@ -59,8 +65,10 @@ set_bg("bg.jpg")
 # ---------------- SESSION STATE ---------------- #
 if "logged_in" not in st.session_state:
     st.session_state.logged_in = False
+
 if "page" not in st.session_state:
     st.session_state.page = "Home"
+
 if "history" not in st.session_state:
     st.session_state.history = []
 
@@ -105,8 +113,8 @@ st.session_state.page = st.sidebar.radio(
     ["Home", "Single Prediction", "Bulk Prediction", "Doctor Dashboard", "Chatbot", "Logout"]
 )
 
-# ---------------- LOAD ML MODEL ---------------- #
-model_ml = joblib.load("heart_model.pkl")
+# ---------------- LOAD MODEL ---------------- #
+model = joblib.load("heart_model.pkl")
 scaler = joblib.load("scaler.pkl")
 
 # ---------------- AI ADVICE ---------------- #
@@ -119,7 +127,7 @@ def ai_advice(score):
         return "High risk. Immediate medical attention recommended."
 
 # ---------------- PDF FUNCTION ---------------- #
-def generate_pdf(pid,name,age,result,score):
+def generate_pdf(pid, name, age, result, score):
     buffer = io.BytesIO()
     doc = SimpleDocTemplate(buffer, pagesize=A4)
     styles = getSampleStyleSheet()
@@ -139,7 +147,7 @@ def generate_pdf(pid,name,age,result,score):
 # ---------------- HOME ---------------- #
 if st.session_state.page == "Home":
     st.title("❤️ Heart Disease Prediction System")
-    st.write("Use sidebar to access prediction, dashboard and AI chatbot.")
+    st.write("Use the sidebar to access prediction, dashboard, and DD CardioBot.")
 
 # ---------------- SINGLE PREDICTION ---------------- #
 if st.session_state.page == "Single Prediction":
@@ -167,16 +175,20 @@ if st.session_state.page == "Single Prediction":
     if st.button("Predict"):
         data = np.array([[age,sex,cp,trestbps,chol,fbs,restecg,thalach,exang,oldpeak,slope,ca,thal]])
         scaled = scaler.transform(data)
-        prediction = model_ml.predict(scaled)[0]
-        probability = model_ml.predict_proba(scaled)[0][1]
+        prediction = model.predict(scaled)[0]
+        probability = model.predict_proba(scaled)[0][1]
         result = "Heart Disease" if prediction==1 else "No Heart Disease"
         st.success(result)
         st.info(f"Risk Score : {probability:.2f}")
         st.info(ai_advice(probability))
         st.session_state.history.append(probability)
-        c.execute("INSERT INTO history (patient_id,patient_name,prediction,risk_score) VALUES (?,?,?,?)",
-                  (patient_id,patient_name,result,probability))
+
+        c.execute(
+            "INSERT INTO history (patient_id,patient_name,prediction,risk_score) VALUES (?,?,?,?)",
+            (patient_id,patient_name,result,probability)
+        )
         conn.commit()
+
         pdf = generate_pdf(patient_id,patient_name,age,result,probability)
         st.download_button("Download Report", pdf, f"{patient_name}_report.pdf", "application/pdf")
 
@@ -195,8 +207,8 @@ if st.session_state.page == "Bulk Prediction":
         df = pd.read_csv(file)
         features = df.iloc[:,2:]
         scaled = scaler.transform(features)
-        preds = model_ml.predict(scaled)
-        probs = model_ml.predict_proba(scaled)[:,1]
+        preds = model.predict(scaled)
+        probs = model.predict_proba(scaled)[:,1]
         df["Prediction"] = preds
         df["Risk Score"] = probs
         st.dataframe(df)
@@ -215,59 +227,20 @@ if st.session_state.page == "Doctor Dashboard":
         ax.set_ylim(0,1)
         st.pyplot(fig)
 
-# ---------------- CHATBOT (OFFLINE) ---------------- #
-if st.session_state["page"] == "Chatbot":
-
+# ---------------- CHATBOT ---------------- #
+if st.session_state.page == "Chatbot":
     st.header("💬 DD CardioBot (Offline)")
-
-    user_question = st.text_input("Ask anything about heart health:")
-
-    if user_question:
-
-        try:
-            from transformers import AutoModelForSeq2SeqLM, AutoTokenizer
-
-            # Load model and tokenizer once (can move outside if you want faster performance)
-            model_name = "google/flan-t5-small"
-            tokenizer = AutoTokenizer.from_pretrained(model_name)
-            model = AutoModelForSeq2SeqLM.from_pretrained(model_name)
-
-            # Prepare prompt
-            prompt = f"""
-            You are a friendly heart health assistant. 
-            Answer in simple words about symptoms, causes, prevention, diet, exercise, and advice.
-            Question: {user_question}
-            """
-
-            # Tokenize and generate
-            inputs = tokenizer(prompt, return_tensors="pt", max_length=512, truncation=True)
-            outputs = model.generate(
-                **inputs,
-                max_new_tokens=250,     # adjust for longer answers
-                do_sample=True,         # makes answer more natural
-                top_p=0.95,
-                temperature=0.7
-            )
-
-            answer = tokenizer.decode(outputs[0], skip_special_tokens=True)
-
-            st.success(answer)
-
-        except Exception as e:
-            st.error("⚠️ Error in generating response.")
-            st.write(e)
+    question = st.text_input("Ask anything about heart health")
+    if question:
+        answer = ask_chatbot(question)
+        st.markdown(f"**You:** {question}")
+        st.markdown(f"**DD CardioBot:** {answer}")
 
 # ---------------- LOGOUT ---------------- #
 if st.session_state.page == "Logout":
     st.session_state.logged_in = False
     st.success("Logged Out")
     st.stop()
-
-
-
-
-
-
 
 
 
