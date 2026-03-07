@@ -287,12 +287,34 @@ if st.session_state.page == "Bulk Prediction":
 # ---------------- DOCTOR DASHBOARD ---------------- #
 if st.session_state.page == "Doctor Dashboard":
 
-    st.header("Doctor Dashboard")
+    st.header("🏥 Doctor Dashboard")
 
+    # Load patient history
     data = pd.read_sql_query("SELECT * FROM history", conn)
 
-    # Search box
-    search = st.text_input("Search Patient (ID or Name)")
+    # ---------------- DASHBOARD METRICS ---------------- #
+    st.subheader("Hospital Overview")
+
+    total_patients = len(data)
+
+    high_risk = len(data[data["risk_score"] > 0.7])
+
+    avg_risk = data["risk_score"].mean()
+
+    col1, col2, col3 = st.columns(3)
+
+    col1.metric("Total Patients", total_patients)
+
+    col2.metric("High Risk Patients", high_risk)
+
+    col3.metric("Average Risk Score", f"{avg_risk:.2f}")
+
+    st.divider()
+
+    # ---------------- SEARCH PATIENT ---------------- #
+    st.subheader("Search Patient")
+
+    search = st.text_input("Enter Patient ID or Name")
 
     if search:
         filtered = data[
@@ -302,9 +324,20 @@ if st.session_state.page == "Doctor Dashboard":
     else:
         filtered = data
 
+    # ---------------- PATIENT TABLE ---------------- #
     st.subheader("Patient History")
 
     st.dataframe(filtered)
+
+    # ---------------- DOWNLOAD CSV ---------------- #
+    csv = data.to_csv(index=False).encode()
+
+    st.download_button(
+        "Download Patient History",
+        csv,
+        "patient_history.csv",
+        "text/csv"
+    )
 
 
 # ---------------- CHATBOT ---------------- #
@@ -345,6 +378,7 @@ if st.session_state.page == "Logout":
     st.session_state.logged_in = False
     st.success("Logged Out")
     st.stop()
+
 
 
 
