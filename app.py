@@ -187,8 +187,38 @@ def generate_pdf(pid, name, age, result, score):
 
 # ---------------- HOME ---------------- #
 if st.session_state.page == "Home":
-    st.title("❤️ Heart Disease Prediction System")
-    st.write("Use the sidebar to access prediction, dashboard, and DD CardioBot.")
+
+    col1, col2 = st.columns([1,5])
+
+    with col1:
+        st.image("logo.png", width=120)
+
+    with col2:
+        st.title("Heart Disease Prediction System")
+
+    st.write(
+        """
+        Welcome to the **AI-Powered Heart Disease Prediction System**.
+
+        This system helps doctors and healthcare professionals predict the risk of heart disease
+        using machine learning and provides health insights for better decision making.
+        """
+    )
+
+    st.subheader("Features of the System")
+
+    st.markdown("""
+    - ❤️ **Single Patient Prediction** – Predict heart disease risk for one patient  
+    - 📂 **Bulk Prediction** – Upload CSV and analyze multiple patients  
+    - 🏥 **Doctor Dashboard** – View patient history and statistics  
+    - 💬 **DD CardioBot** – Ask heart health related questions  
+    - 📄 **PDF Report Generation** – Download patient prediction report
+    """)
+
+    st.subheader("❤️ Heart Health Tip")
+
+    st.info("Exercise at least 30 minutes daily and maintain a healthy diet to reduce heart disease risk.")
+
 
 # ---------------- SINGLE PREDICTION ---------------- #
 if st.session_state.page == "Single Prediction":
@@ -419,6 +449,7 @@ if st.session_state.page == "Logout":
     st.session_state.logged_in = False
     st.success("Logged Out")
     st.stop()
+
 
 
 
