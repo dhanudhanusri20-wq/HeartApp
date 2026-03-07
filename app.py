@@ -208,25 +208,37 @@ if st.session_state.page == "Doctor Dashboard":
         st.pyplot(fig)
 
 # ---------------- CHATBOT ---------------- #
-if st.session_state.page == "Chatbot":
-    st.header("💬 DD CardioBot")
+if st.session_state["page"] == "Chatbot":
+
+    st.header("💬 DD CardioBot (OpenAI)")
+
     question = st.text_input("Ask anything about heart health")
+
     if question:
         try:
-            response = client.generate_text(
-                model="gemini-1.5",  # supported model
-                prompt=f"Explain heart disease symptoms, prevention, diet, exercise, and advice in simple words. User question: {question}"
+            response = openai.ChatCompletion.create(
+                model="gpt-3.5-turbo",
+                messages=[
+                    {"role": "system", "content": "You are a helpful heart health assistant."},
+                    {"role": "user", "content": question}
+                ],
+                max_tokens=300
             )
-            st.success(response.text)
+
+            answer = response['choices'][0]['message']['content']
+            st.success(answer)
+
         except Exception as e:
-            st.error("⚠️ AI assistant temporarily unavailable.")
+            st.error("AI assistant temporarily unavailable.")
             st.write(e)
+
 
 # ---------------- LOGOUT ---------------- #
 if st.session_state.page == "Logout":
     st.session_state.logged_in = False
     st.success("Logged Out")
     st.stop()
+
 
 
 
