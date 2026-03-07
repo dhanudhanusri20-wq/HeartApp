@@ -209,33 +209,29 @@ if st.session_state.page == "Doctor Dashboard":
         st.pyplot(fig)
 
 # ---------------- CHATBOT ---------------- #
-
 if st.session_state["page"] == "Chatbot":
 
-    st.header("💬 DD CardioBot (OpenAI)")
+    st.header("💬 DD CardioBot (Local Model)")
 
     question = st.text_input("Ask anything about heart health")
 
-    if question:   # <-- only run if user enters a question
+    if question:
+        from transformers import AutoModelForSeq2SeqLM, AutoTokenizer
 
-        try:
+        # Load model and tokenizer (cache locally)
+        model_name = "google/flan-t5-small"
+        tokenizer = AutoTokenizer.from_pretrained(model_name)
+        model = AutoModelForSeq2SeqLM.from_pretrained(model_name)
 
-            # Call OpenAI Chat API
-            response = openai.chat.completions.create(
-                model="gpt-3.5-turbo",   # make sure key is set at top
-                messages=[
-                    {"role": "system", "content": "You are a helpful heart health assistant."},
-                    {"role": "user", "content": question}
-                ],
-                max_tokens=300
-            )
+        # Prepare prompt
+        prompt = f"Answer the following question about heart health in simple words:\n{question}"
 
-            answer = response.choices[0].message["content"]
-            st.success(answer)
+        # Tokenize and generate response
+        inputs = tokenizer(prompt, return_tensors="pt")
+        outputs = model.generate(**inputs, max_new_tokens=200)
+        answer = tokenizer.decode(outputs[0], skip_special_tokens=True)
 
-        except Exception as e:
-            st.error("AI assistant temporarily unavailable.")
-            st.write(e)
+        st.success(answer)
 
 
 # ---------------- LOGOUT ---------------- #
@@ -243,6 +239,7 @@ if st.session_state.page == "Logout":
     st.session_state.logged_in = False
     st.success("Logged Out")
     st.stop()
+
 
 
 
