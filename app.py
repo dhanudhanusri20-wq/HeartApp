@@ -145,9 +145,13 @@ if not st.session_state.logged_in:
 
 # ---------------- SIDEBAR ---------------- #
 st.sidebar.image("logo.png", width=120)
-st.sidebar.title("Heart AI System")
+st.sidebar.markdown("## ❤️ Heart AI System")
 
-st.sidebar.title("Navigation")
+st.session_state.page = st.sidebar.radio(
+    "Navigation",
+    ["🏠 Home", "🧑 Patient Prediction", "📂 Bulk Prediction", "🏥 Doctor Dashboard", "💬 Chatbot", "🚪 Logout"]
+)
+
 
 
 # ---------------- LOAD MODEL ---------------- #
@@ -415,6 +419,7 @@ if st.session_state.page == "Logout":
     st.session_state.logged_in = False
     st.success("Logged Out")
     st.stop()
+
 
 
 
