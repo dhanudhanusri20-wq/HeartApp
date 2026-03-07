@@ -421,108 +421,48 @@ if st.session_state.page == "Chatbot":
     if "messages" not in st.session_state:
         st.session_state.messages = []
 
-    # Show previous messages
+    # Show previous chat messages
     for message in st.session_state.messages:
         with st.chat_message(message["role"]):
             st.markdown(message["content"])
 
-    # ---------------- FAQ QUESTIONS ---------------- #
     st.subheader("Common Heart Health Questions")
 
-    faq_answers = {
+    # Question list
+    questions = [
+        "What are the symptoms of heart disease?",
+        "What causes heart disease?",
+        "How can I reduce heart disease risk?",
+        "What foods are good for heart health?",
+        "What foods should heart patients avoid?",
+        "How much exercise is good for the heart?",
+        "What is normal blood pressure?",
+        "What is high cholesterol?",
+        "How does smoking affect the heart?",
+        "What is a heart attack?",
+        "What are early signs of heart attack?",
+        "What should I do during chest pain?",
+        "How does stress affect the heart?",
+        "Is walking good for heart health?",
+        "What is coronary artery disease?",
+        "How can diabetes affect the heart?",
+        "What are heart disease risk factors?",
+        "What lifestyle changes reduce heart disease?",
+        "How important is sleep for heart health?",
+        "Can obesity cause heart problems?",
+        "What are healthy heart habits?",
+        "What is normal heart rate?",
+        "How does alcohol affect the heart?",
+        "Can heart disease be prevented?",
+        "What tests detect heart disease?",
+        "What is ECG?",
+        "What is angiography?",
+        "What is the best diet for heart patients?",
+        "How often should heart checkups be done?",
+        "When should I see a doctor for chest pain?"
+    ]
 
-"What are the symptoms of heart disease?":
-"Common symptoms include chest pain, shortness of breath, fatigue, dizziness, and pain in the arms, neck, or jaw.",
-
-"What causes heart disease?":
-"Heart disease is mainly caused by plaque buildup in the arteries, high blood pressure, smoking, diabetes, high cholesterol, obesity, and lack of physical activity.",
-
-"How can I reduce heart disease risk?":
-"You can reduce risk by exercising regularly, eating a balanced diet, maintaining a healthy weight, avoiding smoking, and controlling blood pressure and cholesterol.",
-
-"What foods are good for heart health?":
-"Fruits, vegetables, whole grains, nuts, fish rich in omega-3 fatty acids, and olive oil are good for heart health.",
-
-"What foods should heart patients avoid?":
-"Heart patients should avoid foods high in saturated fat, trans fats, salt, processed foods, sugary drinks, and fried items.",
-
-"How much exercise is good for the heart?":
-"At least 30 minutes of moderate exercise such as walking, cycling, or swimming for 5 days a week is recommended.",
-
-"What is normal blood pressure?":
-"A normal blood pressure level is around 120/80 mmHg.",
-
-"What is high cholesterol?":
-"High cholesterol occurs when there is too much cholesterol in the blood, which can lead to plaque buildup in arteries.",
-
-"How does smoking affect the heart?":
-"Smoking damages blood vessels, raises blood pressure, and increases the risk of heart attacks and strokes.",
-
-"What is a heart attack?":
-"A heart attack occurs when blood flow to the heart muscle is blocked, usually due to a blood clot.",
-
-"What are early signs of heart attack?":
-"Early signs include chest discomfort, shortness of breath, sweating, nausea, dizziness, and pain in the arms or jaw.",
-
-"What should I do during chest pain?":
-"If chest pain lasts more than a few minutes, seek immediate medical help or call emergency services.",
-
-"How does stress affect the heart?":
-"Chronic stress can increase blood pressure and contribute to heart disease.",
-
-"Is walking good for heart health?":
-"Yes, regular walking improves circulation, lowers blood pressure, and strengthens the heart.",
-
-"What is coronary artery disease?":
-"It is a condition where the coronary arteries become narrowed or blocked due to plaque buildup.",
-
-"How can diabetes affect the heart?":
-"Diabetes can damage blood vessels and increase the risk of heart disease and stroke.",
-
-"What are heart disease risk factors?":
-"Major risk factors include high blood pressure, high cholesterol, smoking, diabetes, obesity, and family history.",
-
-"What lifestyle changes reduce heart disease?":
-"Healthy diet, regular exercise, quitting smoking, managing stress, and maintaining healthy weight.",
-
-"How important is sleep for heart health?":
-"Getting 7-9 hours of quality sleep helps regulate blood pressure and reduces heart disease risk.",
-
-"Can obesity cause heart problems?":
-"Yes, obesity increases the risk of high blood pressure, diabetes, and heart disease.",
-
-"What are healthy heart habits?":
-"Eating balanced diet, staying active, avoiding smoking, managing stress, and regular medical checkups.",
-
-"What is normal heart rate?":
-"A normal resting heart rate for adults is between 60 and 100 beats per minute.",
-
-"How does alcohol affect the heart?":
-"Excessive alcohol can raise blood pressure and increase the risk of heart disease.",
-
-"Can heart disease be prevented?":
-"Many heart diseases can be prevented through healthy lifestyle choices and regular health screenings.",
-
-"What tests detect heart disease?":
-"Common tests include ECG, stress test, echocardiogram, blood tests, and angiography.",
-
-"What is ECG?":
-"ECG (Electrocardiogram) is a test that records the electrical activity of the heart.",
-
-"What is angiography?":
-"Angiography is a medical imaging test used to visualize blood vessels and detect blockages.",
-
-"What is the best diet for heart patients?":
-"A heart-healthy diet includes fruits, vegetables, whole grains, lean proteins, and low-salt foods.",
-
-"How often should heart checkups be done?":
-"Adults should have regular heart checkups at least once a year, especially if risk factors exist.",
-
-"When should I see a doctor for chest pain?":
-"You should see a doctor immediately if chest pain is severe, lasts more than a few minutes, or spreads to the arm, neck, or jaw."
-}
-
-    # Scrollable container
+    # Scrollable question list
     with st.container(height=300):
 
         for q in questions:
@@ -535,8 +475,8 @@ if st.session_state.page == "Chatbot":
                 with st.chat_message("user"):
                     st.markdown(q)
 
+                # FAQ answer first, else AI
                 answer = faq_answers.get(q, ask_chatbot(q))
-
 
                 with st.chat_message("assistant"):
                     st.markdown(answer)
@@ -545,7 +485,7 @@ if st.session_state.page == "Chatbot":
                     {"role": "assistant", "content": answer}
                 )
 
-    # ---------------- CHAT INPUT ---------------- #
+    # Chat input box
     prompt = st.chat_input("Ask something about heart health...")
 
     if prompt:
@@ -573,6 +513,7 @@ if st.session_state.page == "Logout":
     st.session_state.logged_in = False
     st.success("Logged Out")
     st.stop()
+
 
 
 
