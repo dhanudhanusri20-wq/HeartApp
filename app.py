@@ -417,22 +417,81 @@ if st.session_state.page == "Chatbot":
 
     st.header("💬 DD CardioBot (Offline)")
 
-    # Step 1: Create memory for chat
+    # Chat memory
     if "messages" not in st.session_state:
         st.session_state.messages = []
 
-    # Step 2: Show previous messages (ADD YOUR CODE HERE)
+    # Show previous messages
     for message in st.session_state.messages:
         with st.chat_message(message["role"]):
             st.markdown(message["content"])
 
-    # Step 3: Chat input box
+    # ---------------- FAQ QUESTIONS ---------------- #
+    st.subheader("Common Heart Health Questions")
+
+    questions = [
+        "What are the symptoms of heart disease?",
+        "What causes heart disease?",
+        "How can I reduce heart disease risk?",
+        "What foods are good for heart health?",
+        "What foods should heart patients avoid?",
+        "How much exercise is good for the heart?",
+        "What is normal blood pressure?",
+        "What is high cholesterol?",
+        "How does smoking affect the heart?",
+        "What is a heart attack?",
+        "What are early signs of heart attack?",
+        "What should I do during chest pain?",
+        "How does stress affect the heart?",
+        "Is walking good for heart health?",
+        "What is coronary artery disease?",
+        "How can diabetes affect the heart?",
+        "What are heart disease risk factors?",
+        "What lifestyle changes reduce heart disease?",
+        "How important is sleep for heart health?",
+        "Can obesity cause heart problems?",
+        "What are healthy heart habits?",
+        "What is normal heart rate?",
+        "How does alcohol affect the heart?",
+        "Can heart disease be prevented?",
+        "What tests detect heart disease?",
+        "What is ECG?",
+        "What is angiography?",
+        "What is the best diet for heart patients?",
+        "How often should heart checkups be done?",
+        "When should I see a doctor for chest pain?"
+    ]
+
+    # Scrollable container
+    with st.container(height=300):
+
+        for q in questions:
+            if st.button(q):
+
+                st.session_state.messages.append(
+                    {"role": "user", "content": q}
+                )
+
+                with st.chat_message("user"):
+                    st.markdown(q)
+
+                answer = ask_chatbot(q)
+
+                with st.chat_message("assistant"):
+                    st.markdown(answer)
+
+                st.session_state.messages.append(
+                    {"role": "assistant", "content": answer}
+                )
+
+    # ---------------- CHAT INPUT ---------------- #
     prompt = st.chat_input("Ask something about heart health...")
 
-    # Step 4: When user asks question
     if prompt:
 
-        st.session_state.messages.append({"role": "user", "content": prompt})
+        st.session_state.messages.append(
+            {"role": "user", "content": prompt}
+        )
 
         with st.chat_message("user"):
             st.markdown(prompt)
@@ -442,7 +501,10 @@ if st.session_state.page == "Chatbot":
         with st.chat_message("assistant"):
             st.markdown(answer)
 
-        st.session_state.messages.append({"role": "assistant", "content": answer})
+        st.session_state.messages.append(
+            {"role": "assistant", "content": answer}
+        )
+
 
 
 # ---------------- LOGOUT ---------------- #
@@ -450,6 +512,7 @@ if st.session_state.page == "Logout":
     st.session_state.logged_in = False
     st.success("Logged Out")
     st.stop()
+
 
 
 
