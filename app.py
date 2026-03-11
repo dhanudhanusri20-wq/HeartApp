@@ -247,11 +247,13 @@ if st.session_state.page == "Home":
 if st.session_state.page == "Single Prediction":
 
     st.header("Single Patient Prediction")
-    name = st.text_input("Patient Name")
-    age = st.number_input("Age", 1, 120)
+    
+    patient_name = st.text_input("Patient Name", key="patient_name")
 
-    patient_id = st.text_input("Patient ID")
-    patient_name = st.text_input("Patient Name")
+    age = st.number_input("Age", 1, 120, key="patient_age")
+
+    patient_id = st.text_input("Patient ID", key="patient_id")
+
 
     age = st.number_input("Age", 20, 100, 50)
     sex = st.selectbox("Sex", ["Male", "Female"])
@@ -596,6 +598,7 @@ if st.session_state.page == "Logout":
     st.session_state.logged_in = False
     st.success("Logged Out")
     st.stop()
+
 
 
 
