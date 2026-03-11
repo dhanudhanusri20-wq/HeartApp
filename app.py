@@ -221,6 +221,15 @@ def generate_pdf(pid, name, age, result, score):
     doc.build(elements)
     buffer.seek(0)
     return buffer
+    pdf = generate_pdf(name, age, result, probability)
+
+st.download_button(
+    label="Download Medical Report",
+    data=pdf,
+    file_name="heart_report.pdf",
+    mime="application/pdf"
+)
+
 
 # ---------------- HOME ---------------- #
 if st.session_state.page == "Home":
@@ -610,6 +619,7 @@ if st.session_state.page == "Logout":
     st.session_state.logged_in = False
     st.success("Logged Out")
     st.stop()
+
 
 
 
