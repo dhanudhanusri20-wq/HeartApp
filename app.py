@@ -232,7 +232,7 @@ if st.session_state.page == "Single Prediction":
     ca = st.selectbox("Major Vessels", [0,1,2,3], key="ca")
     thal = st.selectbox("Thal", [1,2,3], key="thal")
 
-    # -------- Convert categorical -------- #
+    # -------- Convert categorical values -------- #
     sex = 1 if sex == "Male" else 0
     fbs = 1 if fbs == "Yes" else 0
     exang = 1 if exang == "Yes" else 0
@@ -256,7 +256,6 @@ if st.session_state.page == "Single Prediction":
         st.subheader("Risk Level")
 
         st.progress(float(probability))
-
         st.write(f"Risk Score: {probability*100:.2f}%")
 
         if probability < 0.3:
@@ -285,42 +284,36 @@ if st.session_state.page == "Single Prediction":
         values = model.predict_proba(scaled)[0]
 
         fig, ax = plt.subplots()
-
         ax.bar(labels, values)
-
         ax.set_ylabel("Probability")
         ax.set_title("Model Confidence")
 
         st.pyplot(fig)
 
-       # -------- Explainable AI -------- #
-st.subheader("Explainable AI - Feature Importance")
+        # -------- Explainable AI -------- #
+        st.subheader("Explainable AI - Feature Importance")
 
-features = [
-"Age","Sex","Chest Pain","Blood Pressure","Cholesterol",
-"Fasting Blood Sugar","Rest ECG","Max Heart Rate",
-"Exercise Angina","ST Depression","Slope","Major Vessels","Thal"
-]
+        features = [
+            "Age","Sex","Chest Pain","Blood Pressure","Cholesterol",
+            "Fasting Blood Sugar","Rest ECG","Max Heart Rate",
+            "Exercise Angina","ST Depression","Slope","Major Vessels","Thal"
+        ]
 
-# Get feature importance safely
-if hasattr(model, "feature_importances_"):
-    importances = model.feature_importances_
+        if hasattr(model, "feature_importances_"):
+            importances = model.feature_importances_
 
-elif hasattr(model, "coef_"):
-    importances = abs(model.coef_[0])
+        elif hasattr(model, "coef_"):
+            importances = abs(model.coef_[0])
 
-else:
-    importances = np.zeros(len(features))
+        else:
+            importances = np.zeros(len(features))
 
-fig4, ax4 = plt.subplots()
+        fig2, ax2 = plt.subplots()
+        ax2.barh(features, importances)
+        ax2.set_xlabel("Impact on Prediction")
+        ax2.set_title("Feature Importance")
 
-ax4.barh(features, importances)
-
-ax4.set_xlabel("Impact on Prediction")
-ax4.set_title("Feature Importance")
-
-st.pyplot(fig4)
-
+        st.pyplot(fig2)
 
         # -------- Save History -------- #
         st.session_state.history.append(probability)
@@ -336,14 +329,10 @@ st.pyplot(fig4)
         st.subheader("Risk Score Trend")
 
         fig3, ax3 = plt.subplots()
-
         ax3.plot(st.session_state.history, marker="o")
-
         ax3.set_ylim(0,1)
-
         ax3.set_xlabel("Predictions")
         ax3.set_ylabel("Risk Score")
-
         ax3.set_title("Patient Risk Trend")
 
         st.pyplot(fig3)
@@ -357,7 +346,6 @@ st.pyplot(fig4)
             f"{patient_name}_report.pdf",
             "application/pdf"
         )
-
 
 
 # ---------------- BULK PREDICTION ---------------- #
@@ -591,6 +579,7 @@ if st.session_state.page == "Logout":
     st.session_state.logged_in = False
     st.success("Logged Out")
     st.stop()
+
 
 
 
