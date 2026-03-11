@@ -242,39 +242,41 @@ if st.session_state.page == "Home":
 
     st.info("Exercise at least 30 minutes daily and maintain a healthy diet to reduce heart disease risk.")
 
-
 # ---------------- SINGLE PREDICTION ---------------- #
 if st.session_state.page == "Single Prediction":
 
     st.header("Single Patient Prediction")
-    
+
+    # -------- Patient Details -------- #
+    st.subheader("Patient Details")
+
     patient_name = st.text_input("Patient Name", key="patient_name")
-
-    age = st.number_input("Age", 1, 120, key="patient_age")
-
     patient_id = st.text_input("Patient ID", key="patient_id")
+    age = st.number_input("Age", 20, 100, 50, key="age")
 
+    # -------- Medical Inputs -------- #
+    st.subheader("Medical Parameters")
 
-    age = st.number_input("Age", 20, 100, 50)
-    sex = st.selectbox("Sex", ["Male", "Female"])
-    cp = st.selectbox("Chest Pain Type", [0,1,2,3])
-    trestbps = st.number_input("Resting Blood Pressure", 80, 200, 120)
-    chol = st.number_input("Cholesterol", 100, 400, 200)
-    fbs = st.selectbox("Fasting Blood Sugar >120", ["Yes", "No"])
-    restecg = st.selectbox("Rest ECG", [0,1,2])
-    thalach = st.number_input("Max Heart Rate", 60, 220, 150)
-    exang = st.selectbox("Exercise Induced Angina", ["Yes", "No"])
-    oldpeak = st.number_input("ST Depression", 0.0, 10.0, 1.0)
-    slope = st.selectbox("Slope", [0,1,2])
-    ca = st.selectbox("Major Vessels", [0,1,2,3])
-    thal = st.selectbox("Thal", [1,2,3])
+    sex = st.selectbox("Sex", ["Male", "Female"], key="sex")
+    cp = st.selectbox("Chest Pain Type", [0,1,2,3], key="cp")
+    trestbps = st.number_input("Resting Blood Pressure", 80, 200, 120, key="bp")
+    chol = st.number_input("Cholesterol", 100, 400, 200, key="chol")
+    fbs = st.selectbox("Fasting Blood Sugar >120", ["Yes", "No"], key="fbs")
+    restecg = st.selectbox("Rest ECG", [0,1,2], key="restecg")
+    thalach = st.number_input("Max Heart Rate", 60, 220, 150, key="thalach")
+    exang = st.selectbox("Exercise Induced Angina", ["Yes", "No"], key="exang")
+    oldpeak = st.number_input("ST Depression", 0.0, 10.0, 1.0, key="oldpeak")
+    slope = st.selectbox("Slope", [0,1,2], key="slope")
+    ca = st.selectbox("Major Vessels", [0,1,2,3], key="ca")
+    thal = st.selectbox("Thal", [1,2,3], key="thal")
 
-    # Convert categorical values
+    # -------- Convert categorical values -------- #
     sex = 1 if sex == "Male" else 0
     fbs = 1 if fbs == "Yes" else 0
     exang = 1 if exang == "Yes" else 0
 
-    if st.button("Predict"):
+    # -------- Prediction Button -------- #
+    if st.button("Predict Heart Disease"):
 
         data = np.array([[age,sex,cp,trestbps,chol,fbs,restecg,
                           thalach,exang,oldpeak,slope,ca,thal]])
@@ -289,10 +291,10 @@ if st.session_state.page == "Single Prediction":
 
         st.success(result)
 
-        # ---------------- RISK METER ---------------- #
+        # -------- Risk Meter -------- #
         st.subheader("Risk Level")
 
-        st.progress(probability)
+        st.progress(float(probability))
 
         st.write(f"Risk Score: {probability*100:.1f}%")
 
@@ -303,7 +305,7 @@ if st.session_state.page == "Single Prediction":
         else:
             st.error("High Risk")
 
-        # ---------------- AI HEALTH ADVICE ---------------- #
+        # -------- Health Advice -------- #
         st.subheader("Health Advice")
 
         if probability < 0.3:
@@ -315,7 +317,7 @@ if st.session_state.page == "Single Prediction":
 
         st.info(advice)
 
-        # ---------------- PROBABILITY GRAPH ---------------- #
+        # -------- Probability Graph -------- #
         st.subheader("Prediction Probability")
 
         labels = ["No Heart Disease", "Heart Disease"]
@@ -330,7 +332,7 @@ if st.session_state.page == "Single Prediction":
 
         st.pyplot(fig)
 
-        # ---------------- SAVE HISTORY ---------------- #
+        # -------- Save History -------- #
         st.session_state.history.append(probability)
 
         c.execute(
@@ -340,7 +342,7 @@ if st.session_state.page == "Single Prediction":
 
         conn.commit()
 
-        # ---------------- RISK TREND GRAPH ---------------- #
+        # -------- Risk Trend Graph -------- #
         st.subheader("Risk Score Trend")
 
         fig2, ax2 = plt.subplots()
@@ -356,7 +358,7 @@ if st.session_state.page == "Single Prediction":
 
         st.pyplot(fig2)
 
-        # ---------------- PDF REPORT ---------------- #
+        # -------- PDF Report -------- #
         pdf = generate_pdf(patient_id, patient_name, age, result, probability)
 
         st.download_button(
@@ -365,6 +367,7 @@ if st.session_state.page == "Single Prediction":
             f"{patient_name}_report.pdf",
             "application/pdf"
         )
+
 
 
 # ---------------- BULK PREDICTION ---------------- #
@@ -598,6 +601,7 @@ if st.session_state.page == "Logout":
     st.session_state.logged_in = False
     st.success("Logged Out")
     st.stop()
+
 
 
 
