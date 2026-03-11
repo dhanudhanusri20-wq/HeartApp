@@ -204,31 +204,60 @@ def ai_advice(score):
     else:
         return "High risk. Immediate medical attention recommended."
 
-# ---------------- PDF FUNCTION ---------------- #
-def generate_pdf(pid, name, age, result, score):
+# ---------------- PDF REPORT GENERATION ---------------- #
+
+def generate_pdf(name, age, result, probability):
+
     buffer = io.BytesIO()
+
     doc = SimpleDocTemplate(buffer, pagesize=A4)
+
     styles = getSampleStyleSheet()
-    elements = []
-    elements.append(Paragraph("Heart Disease Prediction Report", styles["Title"]))
-    elements.append(Spacer(1,20))
-    elements.append(Paragraph(f"Patient ID : {pid}", styles["Normal"]))
-    elements.append(Paragraph(f"Patient Name : {name}", styles["Normal"]))
-    elements.append(Paragraph(f"Age : {age}", styles["Normal"]))
-    elements.append(Paragraph(f"Result : {result}", styles["Normal"]))
-    elements.append(Paragraph(f"Risk Score : {score:.2f}", styles["Normal"]))
-    elements.append(Paragraph(f"Advice : {ai_advice(score)}", styles["Normal"]))
-    doc.build(elements)
+
+    story = []
+
+    # Title
+    story.append(Paragraph("Heart Disease Prediction Report", styles['Title']))
+    story.append(Spacer(1, 20))
+
+    # Patient Details
+    story.append(Paragraph(f"<b>Patient Name:</b> {name}", styles['Normal']))
+    story.append(Paragraph(f"<b>Age:</b> {age}", styles['Normal']))
+    story.append(Spacer(1, 20))
+
+    # Prediction Result
+    story.append(Paragraph(f"<b>Prediction Result:</b> {result}", styles['Normal']))
+    story.append(Paragraph(f"<b>Heart Disease Risk Probability:</b> {probability:.2f}", styles['Normal']))
+    story.append(Spacer(1, 20))
+
+    # Medical Advice
+    story.append(Paragraph("<b>Basic Heart Health Advice:</b>", styles['Heading2']))
+    story.append(Paragraph("• Maintain a balanced diet rich in fruits and vegetables.", styles['Normal']))
+    story.append(Paragraph("• Exercise regularly (at least 30 minutes daily).", styles['Normal']))
+    story.append(Paragraph("• Avoid smoking and excessive alcohol.", styles['Normal']))
+    story.append(Paragraph("• Manage stress and maintain healthy sleep habits.", styles['Normal']))
+    story.append(Paragraph("• Regularly monitor blood pressure and cholesterol.", styles['Normal']))
+
+    story.append(Spacer(1, 20))
+
+    story.append(Paragraph("Note: This prediction is based on a machine learning model and should not replace professional medical advice.", styles['Italic']))
+
+    doc.build(story)
+
     buffer.seek(0)
+
     return buffer
-    pdf = generate_pdf(name, age, result, probability)
+
+# Generate PDF report
+pdf = generate_pdf(name, age, result_text, probability)
 
 st.download_button(
-    label="Download Medical Report",
+    label="Download Medical Report (PDF)",
     data=pdf,
-    file_name="heart_report.pdf",
+    file_name="heart_prediction_report.pdf",
     mime="application/pdf"
 )
+
 
 
 # ---------------- HOME ---------------- #
@@ -619,6 +648,7 @@ if st.session_state.page == "Logout":
     st.session_state.logged_in = False
     st.success("Logged Out")
     st.stop()
+
 
 
 
