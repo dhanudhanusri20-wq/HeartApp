@@ -204,47 +204,7 @@ if st.session_state.page == "Home":
 
     st.info("Exercise at least 30 minutes daily and maintain a healthy diet to reduce heart disease risk.")
 
-# ---------------- SINGLE PREDICTION ---------------- # 
-
-def generate_pdf(patient_id, patient_name, age, result, probability):
-
-    buffer = io.BytesIO()
-
-    doc = SimpleDocTemplate(buffer, pagesize=A4)
-
-    styles = getSampleStyleSheet()
-
-    story = []
-
-    story.append(Paragraph("Heart Disease Prediction Report", styles['Title']))
-    story.append(Spacer(1,20))
-
-    story.append(Paragraph(f"Patient ID: {patient_id}", styles['Normal']))
-    story.append(Paragraph(f"Patient Name: {patient_name}", styles['Normal']))
-    story.append(Paragraph(f"Age: {age}", styles['Normal']))
-
-    story.append(Spacer(1,20))
-
-    story.append(Paragraph(f"Prediction Result: {result}", styles['Normal']))
-    story.append(Paragraph(f"Risk Score: {probability*100:.2f}%", styles['Normal']))
-
-    story.append(Spacer(1,20))
-
-    if probability < 0.3:
-        advice = "Low Risk: Maintain healthy lifestyle."
-    elif probability < 0.7:
-        advice = "Moderate Risk: Improve diet and exercise."
-    else:
-        advice = "High Risk: Please consult a cardiologist immediately."
-
-    story.append(Paragraph(f"Health Advice: {advice}", styles['Normal']))
-
-    doc.build(story)
-
-    buffer.seek(0)
-
-    return buffer
-
+# ---------------- SINGLE PREDICTION ---------------- #
 if st.session_state.page == "Single Prediction":
 
     st.header("Single Patient Prediction")
@@ -256,7 +216,7 @@ if st.session_state.page == "Single Prediction":
     patient_id = st.text_input("Patient ID", key="patient_id")
     age = st.number_input("Age", 20, 100, 50, key="age")
 
-    # -------- Medical Inputs -------- #
+    # -------- Medical Parameters -------- #
     st.subheader("Medical Parameters")
 
     sex = st.selectbox("Sex", ["Male", "Female"], key="sex")
@@ -272,12 +232,12 @@ if st.session_state.page == "Single Prediction":
     ca = st.selectbox("Major Vessels", [0,1,2,3], key="ca")
     thal = st.selectbox("Thal", [1,2,3], key="thal")
 
-    # -------- Convert categorical values -------- #
+    # -------- Convert categorical -------- #
     sex = 1 if sex == "Male" else 0
     fbs = 1 if fbs == "Yes" else 0
     exang = 1 if exang == "Yes" else 0
 
-    # -------- Prediction Button -------- #
+    # -------- Predict Button -------- #
     if st.button("Predict Heart Disease"):
 
         data = np.array([[age,sex,cp,trestbps,chol,fbs,restecg,
@@ -286,7 +246,6 @@ if st.session_state.page == "Single Prediction":
         scaled = scaler.transform(data)
 
         prediction = model.predict(scaled)[0]
-
         probability = model.predict_proba(scaled)[0][1]
 
         result = "Heart Disease Detected" if prediction == 1 else "No Heart Disease"
@@ -298,7 +257,7 @@ if st.session_state.page == "Single Prediction":
 
         st.progress(float(probability))
 
-        st.write(f"Risk Score: {probability*100:.1f}%")
+        st.write(f"Risk Score: {probability*100:.2f}%")
 
         if probability < 0.3:
             st.success("Low Risk")
@@ -313,9 +272,9 @@ if st.session_state.page == "Single Prediction":
         if probability < 0.3:
             advice = "Maintain a healthy lifestyle with balanced diet and regular exercise."
         elif probability < 0.7:
-            advice = "Monitor your health, improve diet, and consult a doctor regularly."
+            advice = "Monitor your health and improve lifestyle habits."
         else:
-            advice = "High risk detected. Please consult a cardiologist immediately."
+            advice = "High risk detected. Please consult a cardiologist."
 
         st.info(advice)
 
@@ -334,6 +293,26 @@ if st.session_state.page == "Single Prediction":
 
         st.pyplot(fig)
 
+        # -------- Explainable AI (Feature Importance) -------- #
+        st.subheader("Explainable AI - Feature Importance")
+
+        features = [
+        "Age","Sex","Chest Pain","Blood Pressure","Cholesterol",
+        "Fasting Blood Sugar","Rest ECG","Max Heart Rate",
+        "Exercise Angina","ST Depression","Slope","Major Vessels","Thal"
+        ]
+
+        importances = model.feature_importances_
+
+        fig2, ax2 = plt.subplots()
+
+        ax2.barh(features, importances)
+
+        ax2.set_xlabel("Impact on Prediction")
+        ax2.set_title("Feature Importance")
+
+        st.pyplot(fig2)
+
         # -------- Save History -------- #
         st.session_state.history.append(probability)
 
@@ -347,24 +326,24 @@ if st.session_state.page == "Single Prediction":
         # -------- Risk Trend Graph -------- #
         st.subheader("Risk Score Trend")
 
-        fig2, ax2 = plt.subplots()
+        fig3, ax3 = plt.subplots()
 
-        ax2.plot(st.session_state.history, marker="o")
+        ax3.plot(st.session_state.history, marker="o")
 
-        ax2.set_ylim(0,1)
+        ax3.set_ylim(0,1)
 
-        ax2.set_xlabel("Predictions")
-        ax2.set_ylabel("Risk Score")
+        ax3.set_xlabel("Predictions")
+        ax3.set_ylabel("Risk Score")
 
-        ax2.set_title("Patient Risk Trend")
+        ax3.set_title("Patient Risk Trend")
 
-        st.pyplot(fig2)
+        st.pyplot(fig3)
 
         # -------- PDF Report -------- #
         pdf = generate_pdf(patient_id, patient_name, age, result, probability)
 
         st.download_button(
-            "Download Report",
+            "Download Medical Report",
             pdf,
             f"{patient_name}_report.pdf",
             "application/pdf"
@@ -603,6 +582,7 @@ if st.session_state.page == "Logout":
     st.session_state.logged_in = False
     st.success("Logged Out")
     st.stop()
+
 
 
 
