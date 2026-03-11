@@ -168,44 +168,6 @@ def ai_advice(score):
     else:
         return "High risk. Immediate medical attention recommended."
 
-# ---------------- PDF REPORT GENERATION ---------------- #
-
-def generate_pdf(name, age, result, probability):
-
-    buffer = io.BytesIO()
-
-    doc = SimpleDocTemplate(buffer, pagesize=A4)
-
-    styles = getSampleStyleSheet()
-
-    story = []
-
-    # Title
-    story.append(Paragraph("Heart Disease Prediction Report", styles['Title']))
-    story.append(Spacer(1, 20))
-
-    # Patient Details
-    story.append(Paragraph(f"Patient Name: {name}", styles['Normal']))
-    story.append(Paragraph(f"Age: {age}", styles['Normal']))
-    story.append(Spacer(1, 20))
-
-    # Prediction Result
-    story.append(Paragraph(f"Prediction Result: {result}", styles['Normal']))
-    story.append(Paragraph(f"Risk Probability: {probability:.2f}", styles['Normal']))
-    story.append(Spacer(1, 20))
-
-    # Advice
-    story.append(Paragraph("Heart Health Tips:", styles['Heading2']))
-    story.append(Paragraph("• Eat healthy food", styles['Normal']))
-    story.append(Paragraph("• Exercise daily", styles['Normal']))
-    story.append(Paragraph("• Avoid smoking", styles['Normal']))
-    story.append(Paragraph("• Maintain healthy weight", styles['Normal']))
-
-    doc.build(story)
-
-    buffer.seek(0)
-
-    return buffer
 
 
 # ---------------- HOME ---------------- #
@@ -242,7 +204,47 @@ if st.session_state.page == "Home":
 
     st.info("Exercise at least 30 minutes daily and maintain a healthy diet to reduce heart disease risk.")
 
-# ---------------- SINGLE PREDICTION ---------------- #
+# ---------------- SINGLE PREDICTION ---------------- # 
+
+def generate_pdf(patient_id, patient_name, age, result, probability):
+
+    buffer = io.BytesIO()
+
+    doc = SimpleDocTemplate(buffer, pagesize=A4)
+
+    styles = getSampleStyleSheet()
+
+    story = []
+
+    story.append(Paragraph("Heart Disease Prediction Report", styles['Title']))
+    story.append(Spacer(1,20))
+
+    story.append(Paragraph(f"Patient ID: {patient_id}", styles['Normal']))
+    story.append(Paragraph(f"Patient Name: {patient_name}", styles['Normal']))
+    story.append(Paragraph(f"Age: {age}", styles['Normal']))
+
+    story.append(Spacer(1,20))
+
+    story.append(Paragraph(f"Prediction Result: {result}", styles['Normal']))
+    story.append(Paragraph(f"Risk Score: {probability*100:.2f}%", styles['Normal']))
+
+    story.append(Spacer(1,20))
+
+    if probability < 0.3:
+        advice = "Low Risk: Maintain healthy lifestyle."
+    elif probability < 0.7:
+        advice = "Moderate Risk: Improve diet and exercise."
+    else:
+        advice = "High Risk: Please consult a cardiologist immediately."
+
+    story.append(Paragraph(f"Health Advice: {advice}", styles['Normal']))
+
+    doc.build(story)
+
+    buffer.seek(0)
+
+    return buffer
+
 if st.session_state.page == "Single Prediction":
 
     st.header("Single Patient Prediction")
@@ -601,6 +603,7 @@ if st.session_state.page == "Logout":
     st.session_state.logged_in = False
     st.success("Logged Out")
     st.stop()
+
 
 
 
