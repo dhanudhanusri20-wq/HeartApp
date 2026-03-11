@@ -337,13 +337,20 @@ if st.session_state.page == "Single Prediction":
 
         st.pyplot(fig3)
 
-        # ---------------- PDF REPORT FUNCTION ---------------- #
+# -------- PDF REPORT DOWNLOAD -------- #
 
-       import io
-       from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer
-       from reportlab.lib.styles import getSampleStyleSheet
-       from reportlab.lib.pagesizes import A4
+st.subheader("Download Patient Report")
 
+pdf = generate_pdf(patient_id, patient_name, age, result, probability)
+
+st.download_button(
+    label="Download PDF Report",
+    data=pdf,
+    file_name="heart_report.pdf",
+    mime="application/pdf"
+)
+
+# ---------------- PDF REPORT FUNCTION ---------------- #
 
 def generate_pdf(patient_id, patient_name, age, result, probability):
 
@@ -617,6 +624,7 @@ if st.session_state.page == "Logout":
     st.session_state.logged_in = False
     st.success("Logged Out")
     st.stop()
+
 
 
 
