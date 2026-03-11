@@ -293,25 +293,34 @@ if st.session_state.page == "Single Prediction":
 
         st.pyplot(fig)
 
-        # -------- Explainable AI (Feature Importance) -------- #
-        st.subheader("Explainable AI - Feature Importance")
+       # -------- Explainable AI -------- #
+st.subheader("Explainable AI - Feature Importance")
 
-        features = [
-        "Age","Sex","Chest Pain","Blood Pressure","Cholesterol",
-        "Fasting Blood Sugar","Rest ECG","Max Heart Rate",
-        "Exercise Angina","ST Depression","Slope","Major Vessels","Thal"
-        ]
+features = [
+"Age","Sex","Chest Pain","Blood Pressure","Cholesterol",
+"Fasting Blood Sugar","Rest ECG","Max Heart Rate",
+"Exercise Angina","ST Depression","Slope","Major Vessels","Thal"
+]
 
-        importances = model.feature_importances_
+# Get feature importance safely
+if hasattr(model, "feature_importances_"):
+    importances = model.feature_importances_
 
-        fig2, ax2 = plt.subplots()
+elif hasattr(model, "coef_"):
+    importances = abs(model.coef_[0])
 
-        ax2.barh(features, importances)
+else:
+    importances = np.zeros(len(features))
 
-        ax2.set_xlabel("Impact on Prediction")
-        ax2.set_title("Feature Importance")
+fig4, ax4 = plt.subplots()
 
-        st.pyplot(fig2)
+ax4.barh(features, importances)
+
+ax4.set_xlabel("Impact on Prediction")
+ax4.set_title("Feature Importance")
+
+st.pyplot(fig4)
+
 
         # -------- Save History -------- #
         st.session_state.history.append(probability)
@@ -582,6 +591,7 @@ if st.session_state.page == "Logout":
     st.session_state.logged_in = False
     st.success("Logged Out")
     st.stop()
+
 
 
 
