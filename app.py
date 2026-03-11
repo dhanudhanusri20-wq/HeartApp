@@ -337,15 +337,53 @@ if st.session_state.page == "Single Prediction":
 
         st.pyplot(fig3)
 
-        # -------- PDF Report -------- #
-        pdf = generate_pdf(patient_id, patient_name, age, result, probability)
+        # ---------------- PDF REPORT FUNCTION ---------------- #
 
-        st.download_button(
-            "Download Medical Report",
-            pdf,
-            f"{patient_name}_report.pdf",
-            "application/pdf"
-        )
+       import io
+       from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer
+       from reportlab.lib.styles import getSampleStyleSheet
+       from reportlab.lib.pagesizes import A4
+
+
+def generate_pdf(patient_id, patient_name, age, result, probability):
+
+    buffer = io.BytesIO()
+
+    doc = SimpleDocTemplate(buffer, pagesize=A4)
+
+    styles = getSampleStyleSheet()
+
+    story = []
+
+    story.append(Paragraph("Heart Disease Prediction Report", styles["Title"]))
+    story.append(Spacer(1,20))
+
+    story.append(Paragraph(f"Patient ID: {patient_id}", styles["Normal"]))
+    story.append(Paragraph(f"Patient Name: {patient_name}", styles["Normal"]))
+    story.append(Paragraph(f"Age: {age}", styles["Normal"]))
+
+    story.append(Spacer(1,20))
+
+    story.append(Paragraph(f"Prediction Result: {result}", styles["Normal"]))
+    story.append(Paragraph(f"Risk Score: {probability*100:.2f}%", styles["Normal"]))
+
+    story.append(Spacer(1,20))
+
+    if probability < 0.3:
+        advice = "Low Risk: Maintain healthy lifestyle."
+    elif probability < 0.7:
+        advice = "Moderate Risk: Improve diet and exercise."
+    else:
+        advice = "High Risk: Please consult a cardiologist immediately."
+
+    story.append(Paragraph(f"Health Advice: {advice}", styles["Normal"]))
+
+    doc.build(story)
+
+    buffer.seek(0)
+
+    return buffer
+
 
 
 # ---------------- BULK PREDICTION ---------------- #
@@ -579,6 +617,7 @@ if st.session_state.page == "Logout":
     st.session_state.logged_in = False
     st.success("Logged Out")
     st.stop()
+
 
 
 
