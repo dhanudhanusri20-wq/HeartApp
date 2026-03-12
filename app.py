@@ -172,13 +172,15 @@ conn = sqlite3.connect("predictions.db", check_same_thread=False)
 c = conn.cursor()
 c.execute("""
 CREATE TABLE IF NOT EXISTS history (
-id INTEGER PRIMARY KEY AUTOINCREMENT,
-patient_id TEXT,
-patient_name TEXT,
-prediction TEXT,
-risk_score REAL
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    patient_id TEXT,
+    patient_name TEXT,
+    prediction TEXT,
+    risk_score REAL,
+    prediction_date TEXT
 )
 """)
+
 conn.commit()
 
 # ---------------- PASSWORD HASH ---------------- #
@@ -361,14 +363,17 @@ if st.session_state.page == "Single Prediction":
         st.pyplot(fig2)
 
         # -------- Save History -------- #
+
+        date = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
         st.session_state.history.append(probability)
 
         c.execute(
-            "INSERT INTO history (patient_id, patient_name, prediction, risk_score) VALUES (?,?,?,?)",
-            (patient_id, patient_name, result, probability)
+           "INSERT INTO history (patient_id, patient_name, prediction, risk_score, prediction_date) VALUES (?,?,?,?,?)",
+            (patient_id, patient_name, result, probability, date)
         )
 
-        conn.commit()
+         conn.commit()
 
         # -------- Risk Trend Graph -------- #
         st.subheader("Risk Score Trend")
@@ -629,6 +634,7 @@ if st.session_state.page == "Logout":
     st.session_state.logged_in = False
     st.success("Logged Out")
     st.stop()
+
 
 
 
