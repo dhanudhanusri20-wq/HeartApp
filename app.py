@@ -186,12 +186,7 @@ st.session_state.page = page
 # ---------------- LOAD MODEL ---------------- #
 model = joblib.load("heart_model.pkl")
 scaler = joblib.load("scaler.pkl")
-# -------- Health Advice -------- # 
-st.subheader("Health Advice")
-if probability < 0.3: advice = "Maintain a healthy lifestyle with balanced diet and regular exercise."
-    elif probability < 0.7: advice = "Monitor your health and improve lifestyle habits."
-        else: advice = "High risk detected. Please consult a cardiologist."
-            st.info(advice)
+
 # ---------------- HOME ---------------- #
 if st.session_state.page == "Home":
 
@@ -604,6 +599,7 @@ if st.session_state.page == "Logout":
     st.session_state.logged_in = False
     st.success("Logged Out")
     st.stop()
+
 
 
 
