@@ -304,37 +304,22 @@ if st.session_state.page == "Single Prediction":
     fbs = 1 if fbs == "Yes" else 0
     exang = 1 if exang == "Yes" else 0
 
- # -------- Predict Button -------- #
-if st.button("Predict Heart Disease"):
+    # -------- Predict Button -------- #
+    if st.button("Predict Heart Disease"):
 
-    data = np.array([[age,sex,cp,trestbps,chol,fbs,restecg,
-                      thalach,exang,oldpeak,slope,ca,thal]])
+        data = np.array([[age,sex,cp,trestbps,chol,fbs,restecg,
+                          thalach,exang,oldpeak,slope,ca,thal]])
 
-    scaled = scaler.transform(data)
+        scaled = scaler.transform(data)
 
-    prediction = model.predict(scaled)[0]
-    probability = model.predict_proba(scaled)[0][1]
+        prediction = model.predict(scaled)[0]
+        probability = model.predict_proba(scaled)[0][1]
 
-    result = "Heart Disease Detected" if prediction == 1 else "No Heart Disease"
+        result = "Heart Disease Detected" if prediction == 1 else "No Heart Disease"
 
-    st.success(result)
+        st.success(result)
 
-    # -------- Risk Level -------- #
-    st.subheader("Risk Level")
-
-    st.progress(probability)
-
-    st.write(f"Risk Score: {probability*100:.2f}%")
-
-    if probability < 0.3:
-        st.success("Low Risk")
-    elif probability < 0.7:
-        st.warning("Moderate Risk")
-    else:
-        st.error("High Risk")
-
-       
-       # -------- Risk Meter -------- #
+        # -------- Risk Level -------- #
         st.subheader("Risk Level")
 
         st.progress(float(probability))
@@ -416,6 +401,7 @@ if st.button("Predict Heart Disease"):
         ax3.set_title("Patient Risk Trend")
 
         st.pyplot(fig3)
+
 
 
 # ---------------- BULK PREDICTION ---------------- #
@@ -649,6 +635,7 @@ if st.session_state.page == "Logout":
     st.session_state.logged_in = False
     st.success("Logged Out")
     st.stop()
+
 
 
 
