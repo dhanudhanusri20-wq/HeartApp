@@ -281,24 +281,13 @@ if st.session_state.page == "Single Prediction":
     ca = st.selectbox("Major Vessels", [0,1,2,3])
     thal = st.selectbox("Thal", [1,2,3])
 
-    # -------- Convert categorical values -------- #
+    # -------- Convert Categorical Values -------- #
     sex = 1 if sex == "Male" else 0
     fbs = 1 if fbs == "Yes" else 0
     exang = 1 if exang == "Yes" else 0
 
     # -------- Predict Button -------- #
     if st.button("Predict Heart Disease"):
-        import datetime
-
-           date = datetime.datetime.now()
-
-           c.execute(
-               "INSERT INTO history (patient_id, patient_name, prediction, risk_score, prediction_date) VALUES (?,?,?,?,?)",
-                (patient_id, patient_name, result, probability, date)
-              )
-
-              conn.commit()
-
 
         data = np.array([[age,sex,cp,trestbps,chol,fbs,restecg,
                           thalach,exang,oldpeak,slope,ca,thal]])
@@ -374,17 +363,18 @@ if st.session_state.page == "Single Prediction":
         st.pyplot(fig2)
 
         # -------- Save History -------- #
+        import datetime
 
-        date = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        date = datetime.datetime.now()
 
         st.session_state.history.append(probability)
 
         c.execute(
-           "INSERT INTO history (patient_id, patient_name, prediction, risk_score, prediction_date) VALUES (?,?,?,?,?)",
+            "INSERT INTO history (patient_id, patient_name, prediction, risk_score, prediction_date) VALUES (?,?,?,?,?)",
             (patient_id, patient_name, result, probability, date)
         )
 
-         conn.commit()
+        conn.commit()
 
         # -------- Risk Trend Graph -------- #
         st.subheader("Risk Score Trend")
@@ -399,7 +389,6 @@ if st.session_state.page == "Single Prediction":
         st.pyplot(fig3)
 
         # -------- PDF Report Download -------- #
-
         st.subheader("Download Patient Report")
 
         pdf = generate_pdf(patient_id, patient_name, age, result, probability)
@@ -409,10 +398,7 @@ if st.session_state.page == "Single Prediction":
             data=pdf,
             file_name="heart_report.pdf",
             mime="application/pdf"
-)
-
-
-
+        )
 
 # ---------------- BULK PREDICTION ---------------- #
 if st.session_state.page == "Bulk Prediction":
@@ -645,6 +631,7 @@ if st.session_state.page == "Logout":
     st.session_state.logged_in = False
     st.success("Logged Out")
     st.stop()
+
 
 
 
