@@ -49,6 +49,32 @@ from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer
 from reportlab.lib.styles import getSampleStyleSheet
 from reportlab.lib.pagesizes import A4
 
+ buffer = io.BytesIO()
+
+    doc = SimpleDocTemplate(buffer, pagesize=A4)
+
+    styles = getSampleStyleSheet()
+
+    story = []
+
+    story.append(Paragraph("Heart Disease Prediction Report", styles["Title"]))
+    story.append(Spacer(1,20))
+
+    story.append(Paragraph(f"Patient ID: {patient_id}", styles["Normal"]))
+    story.append(Paragraph(f"Patient Name: {patient_name}", styles["Normal"]))
+    story.append(Paragraph(f"Age: {age}", styles["Normal"]))
+
+    story.append(Spacer(1,20))
+
+    story.append(Paragraph(f"Prediction Result: {result}", styles["Normal"]))
+    story.append(Paragraph(f"Risk Score: {probability*100:.2f}%", styles["Normal"]))
+
+    doc.build(story)
+
+    buffer.seek(0)
+
+    return buffer
+
 # ---------------- Hugging Face Local Chatbot ---------------- #
 from transformers import AutoModelForSeq2SeqLM, AutoTokenizer
 
@@ -252,6 +278,19 @@ if st.session_state.page == "Single Prediction":
 
         st.success(result)
 
+        # -------- PDF REPORT DOWNLOAD -------- #
+
+        st.subheader("Download Patient Report")
+
+        pdf = generate_pdf(patient_id, patient_name, age, result, probability)
+
+        st.download_button(
+            label="Download PDF Report",
+            data=pdf,
+            file_name="heart_report.pdf",
+            mime="application/pdf"
+        )
+
         # -------- Risk Meter -------- #
         st.subheader("Risk Level")
 
@@ -336,20 +375,6 @@ if st.session_state.page == "Single Prediction":
         ax3.set_title("Patient Risk Trend")
 
         st.pyplot(fig3)
-
-# -------- PDF REPORT DOWNLOAD -------- #
-
-st.subheader("Download Patient Report")
-
-pdf = generate_pdf(patient_id, patient_name, age, result, probability)
-
-st.download_button(
-    label="Download PDF Report",
-    data=pdf,
-    file_name="heart_report.pdf",
-    mime="application/pdf"
-)
-
 
 
 # ---------------- BULK PREDICTION ---------------- #
@@ -583,6 +608,7 @@ if st.session_state.page == "Logout":
     st.session_state.logged_in = False
     st.success("Logged Out")
     st.stop()
+
 
 
 
