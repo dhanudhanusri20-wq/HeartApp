@@ -319,6 +319,18 @@ if st.session_state.page == "Single Prediction":
 
         st.success(result)
 
+        # -------- PDF REPORT -------- #
+       st.subheader("Download Patient Report")
+
+       pdf = generate_pdf(patient_id, patient_name, age, result, probability)
+
+       st.download_button(
+        label="Download PDF Report",
+        data=pdf,
+        file_name="heart_report.pdf",
+        mime="application/pdf"
+    )
+
        
        # -------- Risk Meter -------- #
         st.subheader("Risk Level")
@@ -635,6 +647,7 @@ if st.session_state.page == "Logout":
     st.session_state.logged_in = False
     st.success("Logged Out")
     st.stop()
+
 
 
 
