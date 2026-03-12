@@ -304,7 +304,8 @@ if st.session_state.page == "Single Prediction":
     fbs = 1 if fbs == "Yes" else 0
     exang = 1 if exang == "Yes" else 0
 
-   if st.button("Predict Heart Disease"):
+  # -------- Predict Button -------- #
+if st.button("Predict Heart Disease"):
 
     data = np.array([[age,sex,cp,trestbps,chol,fbs,restecg,
                       thalach,exang,oldpeak,slope,ca,thal]])
@@ -318,8 +319,7 @@ if st.session_state.page == "Single Prediction":
 
     st.success(result)
 
-
-    # -------- PDF REPORT -------- #
+    # PDF Report
     st.subheader("Download Patient Report")
 
     pdf = generate_pdf(patient_id, patient_name, age, result, probability)
@@ -647,6 +647,7 @@ if st.session_state.page == "Logout":
     st.session_state.logged_in = False
     st.success("Logged Out")
     st.stop()
+
 
 
 
