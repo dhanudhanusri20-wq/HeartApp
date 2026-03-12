@@ -48,8 +48,9 @@ from datetime import datetime
 from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer
 from reportlab.lib.styles import getSampleStyleSheet
 from reportlab.lib.pagesizes import A4
+def generate_pdf(patient_id, patient_name, age, result, probability):
 
- buffer = io.BytesIO()
+    buffer = io.BytesIO()
 
     doc = SimpleDocTemplate(buffer, pagesize=A4)
 
@@ -74,6 +75,7 @@ from reportlab.lib.pagesizes import A4
     buffer.seek(0)
 
     return buffer
+
 
 # ---------------- Hugging Face Local Chatbot ---------------- #
 from transformers import AutoModelForSeq2SeqLM, AutoTokenizer
@@ -608,6 +610,7 @@ if st.session_state.page == "Logout":
     st.session_state.logged_in = False
     st.success("Logged Out")
     st.stop()
+
 
 
 
