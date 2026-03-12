@@ -304,7 +304,7 @@ if st.session_state.page == "Single Prediction":
     fbs = 1 if fbs == "Yes" else 0
     exang = 1 if exang == "Yes" else 0
 
-  # -------- Predict Button -------- #
+ # -------- Predict Button -------- #
 if st.button("Predict Heart Disease"):
 
     data = np.array([[age,sex,cp,trestbps,chol,fbs,restecg,
@@ -319,17 +319,19 @@ if st.button("Predict Heart Disease"):
 
     st.success(result)
 
-    # PDF Report
-    st.subheader("Download Patient Report")
+    # -------- Risk Level -------- #
+    st.subheader("Risk Level")
 
-    pdf = generate_pdf(patient_id, patient_name, age, result, probability)
+    st.progress(probability)
 
-    st.download_button(
-        label="Download PDF Report",
-        data=pdf,
-        file_name="heart_report.pdf",
-        mime="application/pdf"
-    )
+    st.write(f"Risk Score: {probability*100:.2f}%")
+
+    if probability < 0.3:
+        st.success("Low Risk")
+    elif probability < 0.7:
+        st.warning("Moderate Risk")
+    else:
+        st.error("High Risk")
 
        
        # -------- Risk Meter -------- #
@@ -647,6 +649,7 @@ if st.session_state.page == "Logout":
     st.session_state.logged_in = False
     st.success("Logged Out")
     st.stop()
+
 
 
 
