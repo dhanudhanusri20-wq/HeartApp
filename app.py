@@ -186,20 +186,12 @@ st.session_state.page = page
 # ---------------- LOAD MODEL ---------------- #
 model = joblib.load("heart_model.pkl")
 scaler = joblib.load("scaler.pkl")
-
-# -------- AI Medical Advice -------- #
-
-st.subheader("AI Medical Advice")
-
-question = f"""
-A patient has a heart disease risk score of {probability*100:.2f}%.
-Give simple heart health advice including diet, exercise, and medical suggestion.
-"""
-
-ai_advice = ask_chatbot(question)
-
-st.info(ai_advice)
-
+# -------- Health Advice -------- # 
+st.subheader("Health Advice")
+if probability < 0.3: advice = "Maintain a healthy lifestyle with balanced diet and regular exercise."
+    elif probability < 0.7: advice = "Monitor your health and improve lifestyle habits."
+        else: advice = "High risk detected. Please consult a cardiologist."
+            st.info(advice)
 # ---------------- HOME ---------------- #
 if st.session_state.page == "Home":
 
