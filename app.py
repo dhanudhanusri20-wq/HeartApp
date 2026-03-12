@@ -187,16 +187,18 @@ st.session_state.page = page
 model = joblib.load("heart_model.pkl")
 scaler = joblib.load("scaler.pkl")
 
-# ---------------- AI ADVICE ---------------- #
-def ai_advice(score):
-    if score < 0.3:
-        return "Maintain healthy lifestyle and regular checkups."
-    elif score < 0.7:
-        return "Consult a doctor and monitor diet and exercise."
-    else:
-        return "High risk. Immediate medical attention recommended."
+# -------- AI Medical Advice -------- #
 
+st.subheader("AI Medical Advice")
 
+question = f"""
+A patient has a heart disease risk score of {probability*100:.2f}%.
+Give simple heart health advice including diet, exercise, and medical suggestion.
+"""
+
+ai_advice = ask_chatbot(question)
+
+st.info(ai_advice)
 
 # ---------------- HOME ---------------- #
 if st.session_state.page == "Home":
@@ -610,6 +612,7 @@ if st.session_state.page == "Logout":
     st.session_state.logged_in = False
     st.success("Logged Out")
     st.stop()
+
 
 
 
