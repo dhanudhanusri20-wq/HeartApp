@@ -45,30 +45,80 @@ import sqlite3
 import hashlib
 from datetime import datetime
 
-from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table
 from reportlab.lib.styles import getSampleStyleSheet
 from reportlab.lib.pagesizes import A4
+from reportlab.lib import colors
 def generate_pdf(patient_id, patient_name, age, result, probability):
 
     buffer = io.BytesIO()
-
     doc = SimpleDocTemplate(buffer, pagesize=A4)
 
     styles = getSampleStyleSheet()
-
     story = []
 
+    # Title
     story.append(Paragraph("Heart Disease Prediction Report", styles["Title"]))
+    story.append(Spacer(1, 10))
+
+    # Hospital name
+    story.append(Paragraph("Hospital: Cardio AI Health System", styles["Normal"]))
+
+    # Date
+    date = datetime.now().strftime("%Y-%m-%d")
+    story.append(Paragraph(f"Date: {date}", styles["Normal"]))
+    story.append(Spacer(1, 20))
+
+    # Patient Information
+    story.append(Paragraph("<b>Patient Information</b>", styles["Heading3"]))
+
+    patient_data = [
+        ["Patient ID", patient_id],
+        ["Patient Name", patient_name],
+        ["Age", age]
+    ]
+
+    table = Table(patient_data)
+    table.setStyle([
+        ("GRID",(0,0),(-1,-1),1,colors.grey),
+        ("BACKGROUND",(0,0),(-1,0),colors.lightgrey)
+    ])
+
+    story.append(table)
     story.append(Spacer(1,20))
 
-    story.append(Paragraph(f"Patient ID: {patient_id}", styles["Normal"]))
-    story.append(Paragraph(f"Patient Name: {patient_name}", styles["Normal"]))
-    story.append(Paragraph(f"Age: {age}", styles["Normal"]))
+    # Prediction Result
+    story.append(Paragraph("<b>Prediction Result</b>", styles["Heading3"]))
 
+    risk_score = f"{probability*100:.2f}%"
+
+    if probability < 0.3:
+        risk_level = "Low Risk"
+        recommendation = "Maintain a healthy diet and regular exercise."
+    elif probability < 0.7:
+        risk_level = "Moderate Risk"
+        recommendation = "Monitor health regularly and improve lifestyle habits."
+    else:
+        risk_level = "High Risk"
+        recommendation = "Consult a cardiologist immediately."
+
+    prediction_data = [
+        ["Prediction Result", result],
+        ["Risk Score", risk_score],
+        ["Risk Level", risk_level]
+    ]
+
+    table2 = Table(prediction_data)
+    table2.setStyle([
+        ("GRID",(0,0),(-1,-1),1,colors.grey)
+    ])
+
+    story.append(table2)
     story.append(Spacer(1,20))
 
-    story.append(Paragraph(f"Prediction Result: {result}", styles["Normal"]))
-    story.append(Paragraph(f"Risk Score: {probability*100:.2f}%", styles["Normal"]))
+    # Doctor Recommendation
+    story.append(Paragraph("<b>Doctor Recommendation</b>", styles["Heading3"]))
+    story.append(Paragraph(recommendation, styles["Normal"]))
 
     doc.build(story)
 
@@ -269,93 +319,8 @@ if st.session_state.page == "Single Prediction":
 
         st.success(result)
 
-       from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table
-       from reportlab.lib.styles import getSampleStyleSheet
-       from reportlab.lib.pagesizes import A4
-       from reportlab.lib import colors
-       from datetime import datetime
-       import io
-
-
-       def generate_pdf(patient_id, patient_name, age, result, probability):
-
-    buffer = io.BytesIO()
-    doc = SimpleDocTemplate(buffer, pagesize=A4)
-
-    styles = getSampleStyleSheet()
-    story = []
-
-    # Title
-    story.append(Paragraph("Heart Disease Prediction Report", styles["Title"]))
-    story.append(Spacer(1, 10))
-
-    # Hospital name
-    story.append(Paragraph("Hospital: Cardio AI Health System", styles["Normal"]))
-
-    # Date
-    date = datetime.now().strftime("%Y-%m-%d")
-    story.append(Paragraph(f"Date: {date}", styles["Normal"]))
-    story.append(Spacer(1, 20))
-
-    # Patient Information
-    story.append(Paragraph("<b>Patient Information</b>", styles["Heading3"]))
-
-    patient_data = [
-        ["Patient ID", patient_id],
-        ["Patient Name", patient_name],
-        ["Age", age]
-    ]
-
-    table = Table(patient_data)
-    table.setStyle([
-        ("GRID",(0,0),(-1,-1),1,colors.grey),
-        ("BACKGROUND",(0,0),(-1,0),colors.lightgrey)
-    ])
-
-    story.append(table)
-    story.append(Spacer(1,20))
-
-    # Prediction Result
-    story.append(Paragraph("<b>Prediction Result</b>", styles["Heading3"]))
-
-    risk_score = f"{probability*100:.2f}%"
-
-    if probability < 0.3:
-        risk_level = "Low Risk"
-        recommendation = "Maintain a healthy diet and regular exercise."
-    elif probability < 0.7:
-        risk_level = "Moderate Risk"
-        recommendation = "Monitor health regularly and improve lifestyle habits."
-    else:
-        risk_level = "High Risk"
-        recommendation = "Consult a cardiologist immediately."
-
-    prediction_data = [
-        ["Prediction Result", result],
-        ["Risk Score", risk_score],
-        ["Risk Level", risk_level]
-    ]
-
-    table2 = Table(prediction_data)
-    table2.setStyle([
-        ("GRID",(0,0),(-1,-1),1,colors.grey)
-    ])
-
-    story.append(table2)
-    story.append(Spacer(1,20))
-
-    # Doctor Recommendation
-    story.append(Paragraph("<b>Doctor Recommendation</b>", styles["Heading3"]))
-    story.append(Paragraph(recommendation, styles["Normal"]))
-
-    doc.build(story)
-
-    buffer.seek(0)
-
-    return buffer
-
-
-        # -------- Risk Meter -------- #
+       
+       # -------- Risk Meter -------- #
         st.subheader("Risk Level")
 
         st.progress(float(probability))
@@ -670,6 +635,7 @@ if st.session_state.page == "Logout":
     st.session_state.logged_in = False
     st.success("Logged Out")
     st.stop()
+
 
 
 
