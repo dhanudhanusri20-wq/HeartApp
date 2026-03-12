@@ -49,82 +49,62 @@ from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table
 from reportlab.lib.styles import getSampleStyleSheet
 from reportlab.lib.pagesizes import A4
 from reportlab.lib import colors
+from reportlab.lib.pagesizes import letter
+from reportlab.pdfgen import canvas
+
 def generate_pdf(patient_id, patient_name, age, result, probability):
 
     buffer = io.BytesIO()
-    doc = SimpleDocTemplate(buffer, pagesize=A4)
 
-    styles = getSampleStyleSheet()
-    story = []
+    c = canvas.Canvas(buffer, pagesize=letter)
 
-    # Title
-    story.append(Paragraph("Heart Disease Prediction Report", styles["Title"]))
-    story.append(Spacer(1, 10))
+    c.setFont("Helvetica-Bold", 18)
+    c.drawString(150, 750, "Heart Disease Prediction Report")
 
-    # Hospital name
-    story.append(Paragraph("Hospital: Cardio AI Health System", styles["Normal"]))
+    c.setFont("Helvetica", 12)
+    c.drawString(50, 720, "Hospital: Cardio AI Health System")
 
-    # Date
-    date = datetime.now().strftime("%Y-%m-%d")
-    story.append(Paragraph(f"Date: {date}", styles["Normal"]))
-    story.append(Spacer(1, 20))
+    import datetime
+    today = datetime.date.today()
+    c.drawString(50, 700, f"Date: {today}")
 
-    # Patient Information
-    story.append(Paragraph("<b>Patient Information</b>", styles["Heading3"]))
+    # Patient Info
+    c.setFont("Helvetica-Bold", 14)
+    c.drawString(50, 660, "Patient Information")
 
-    patient_data = [
-        ["Patient ID", patient_id],
-        ["Patient Name", patient_name],
-        ["Age", age]
-    ]
+    c.setFont("Helvetica", 12)
+    c.drawString(50, 640, f"Patient ID: {patient_id}")
+    c.drawString(50, 620, f"Patient Name: {patient_name}")
+    c.drawString(50, 600, f"Age: {age}")
 
-    table = Table(patient_data)
-    table.setStyle([
-        ("GRID",(0,0),(-1,-1),1,colors.grey),
-        ("BACKGROUND",(0,0),(-1,0),colors.lightgrey)
-    ])
+    # Prediction
+    c.setFont("Helvetica-Bold", 14)
+    c.drawString(50, 560, "Prediction Result")
 
-    story.append(table)
-    story.append(Spacer(1,20))
+    c.setFont("Helvetica", 12)
+    c.drawString(50, 540, f"Result: {result}")
+    c.drawString(50, 520, f"Risk Score: {probability*100:.2f}%")
 
-    # Prediction Result
-    story.append(Paragraph("<b>Prediction Result</b>", styles["Heading3"]))
-
-    risk_score = f"{probability*100:.2f}%"
+    # Recommendation
+    c.setFont("Helvetica-Bold", 14)
+    c.drawString(50, 480, "Doctor Recommendation")
 
     if probability < 0.3:
-        risk_level = "Low Risk"
-        recommendation = "Maintain a healthy diet and regular exercise."
+        advice = "Maintain a healthy lifestyle and regular exercise."
     elif probability < 0.7:
-        risk_level = "Moderate Risk"
-        recommendation = "Monitor health regularly and improve lifestyle habits."
+        advice = "Monitor your health and improve diet and lifestyle."
     else:
-        risk_level = "High Risk"
-        recommendation = "Consult a cardiologist immediately."
+        advice = "High risk detected. Please consult a cardiologist immediately."
 
-    prediction_data = [
-        ["Prediction Result", result],
-        ["Risk Score", risk_score],
-        ["Risk Level", risk_level]
-    ]
+    c.setFont("Helvetica", 12)
+    c.drawString(50, 460, advice)
 
-    table2 = Table(prediction_data)
-    table2.setStyle([
-        ("GRID",(0,0),(-1,-1),1,colors.grey)
-    ])
-
-    story.append(table2)
-    story.append(Spacer(1,20))
-
-    # Doctor Recommendation
-    story.append(Paragraph("<b>Doctor Recommendation</b>", styles["Heading3"]))
-    story.append(Paragraph(recommendation, styles["Normal"]))
-
-    doc.build(story)
+    c.save()
 
     buffer.seek(0)
 
     return buffer
+
 
 
 # ---------------- Hugging Face Local Chatbot ---------------- #
@@ -402,6 +382,20 @@ if st.session_state.page == "Single Prediction":
 
         st.pyplot(fig3)
 
+        # -------- PDF Report Download -------- #
+
+        st.subheader("Download Patient Report")
+
+        pdf = generate_pdf(patient_id, patient_name, age, result, probability)
+
+        st.download_button(
+            label="Download PDF Report",
+            data=pdf,
+            file_name="heart_report.pdf",
+            mime="application/pdf"
+)
+
+
 
 
 # ---------------- BULK PREDICTION ---------------- #
@@ -635,6 +629,7 @@ if st.session_state.page == "Logout":
     st.session_state.logged_in = False
     st.success("Logged Out")
     st.stop()
+
 
 
 
