@@ -288,6 +288,17 @@ if st.session_state.page == "Single Prediction":
 
     # -------- Predict Button -------- #
     if st.button("Predict Heart Disease"):
+        import datetime
+
+           date = datetime.datetime.now()
+
+           c.execute(
+               "INSERT INTO history (patient_id, patient_name, prediction, risk_score, prediction_date) VALUES (?,?,?,?,?)",
+                (patient_id, patient_name, result, probability, date)
+              )
+
+              conn.commit()
+
 
         data = np.array([[age,sex,cp,trestbps,chol,fbs,restecg,
                           thalach,exang,oldpeak,slope,ca,thal]])
@@ -634,6 +645,7 @@ if st.session_state.page == "Logout":
     st.session_state.logged_in = False
     st.success("Logged Out")
     st.stop()
+
 
 
 
