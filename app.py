@@ -229,25 +229,25 @@ if st.session_state.page == "Single Prediction":
     # -------- Patient Details -------- #
     st.subheader("Patient Details")
 
-    patient_name = st.text_input("Patient Name", key="patient_name")
-    patient_id = st.text_input("Patient ID", key="patient_id")
-    age = st.number_input("Age", 20, 100, 50, key="age")
+    patient_name = st.text_input("Patient Name")
+    patient_id = st.text_input("Patient ID")
+    age = st.number_input("Age", 20, 100, 50)
 
     # -------- Medical Parameters -------- #
     st.subheader("Medical Parameters")
 
-    sex = st.selectbox("Sex", ["Male", "Female"], key="sex")
-    cp = st.selectbox("Chest Pain Type", [0,1,2,3], key="cp")
-    trestbps = st.number_input("Resting Blood Pressure", 80, 200, 120, key="bp")
-    chol = st.number_input("Cholesterol", 100, 400, 200, key="chol")
-    fbs = st.selectbox("Fasting Blood Sugar >120", ["Yes", "No"], key="fbs")
-    restecg = st.selectbox("Rest ECG", [0,1,2], key="restecg")
-    thalach = st.number_input("Max Heart Rate", 60, 220, 150, key="thalach")
-    exang = st.selectbox("Exercise Induced Angina", ["Yes", "No"], key="exang")
-    oldpeak = st.number_input("ST Depression", 0.0, 10.0, 1.0, key="oldpeak")
-    slope = st.selectbox("Slope", [0,1,2], key="slope")
-    ca = st.selectbox("Major Vessels", [0,1,2,3], key="ca")
-    thal = st.selectbox("Thal", [1,2,3], key="thal")
+    sex = st.selectbox("Sex", ["Male", "Female"])
+    cp = st.selectbox("Chest Pain Type", [0,1,2,3])
+    trestbps = st.number_input("Resting Blood Pressure", 80, 200, 120)
+    chol = st.number_input("Cholesterol", 100, 400, 200)
+    fbs = st.selectbox("Fasting Blood Sugar >120", ["Yes", "No"])
+    restecg = st.selectbox("Rest ECG", [0,1,2])
+    thalach = st.number_input("Max Heart Rate", 60, 220, 150)
+    exang = st.selectbox("Exercise Induced Angina", ["Yes", "No"])
+    oldpeak = st.number_input("ST Depression", 0.0, 10.0, 1.0)
+    slope = st.selectbox("Slope", [0,1,2])
+    ca = st.selectbox("Major Vessels", [0,1,2,3])
+    thal = st.selectbox("Thal", [1,2,3])
 
     # -------- Convert categorical values -------- #
     sex = 1 if sex == "Male" else 0
@@ -268,20 +268,8 @@ if st.session_state.page == "Single Prediction":
         result = "Heart Disease Detected" if prediction == 1 else "No Heart Disease"
 
         st.success(result)
-        # -------- AI Medical Advice -------- #
-       st.subheader("AI Medical Advice")
-
-       question = f"""
-       A patient has a heart disease risk score of {probability*100:.2f}%.
-       Give simple heart health advice including diet, exercise, and medical suggestion.
-       """
-
-       ai_advice = ask_chatbot(question)
-
-       st.info(ai_advice)
 
         # -------- PDF REPORT DOWNLOAD -------- #
-
         st.subheader("Download Patient Report")
 
         pdf = generate_pdf(patient_id, patient_name, age, result, probability)
@@ -306,8 +294,19 @@ if st.session_state.page == "Single Prediction":
         else:
             st.error("High Risk")
 
-       
-       # -------- Probability Graph -------- #
+        # -------- AI Medical Advice -------- #
+        st.subheader("AI Medical Advice")
+
+        question = f"""
+        A patient has a heart disease risk score of {probability*100:.2f}%.
+        Give simple heart health advice including diet, exercise, and medical suggestion.
+        """
+
+        ai_advice = ask_chatbot(question)
+
+        st.info(ai_advice)
+
+        # -------- Probability Graph -------- #
         st.subheader("Prediction Probability")
 
         labels = ["No Heart Disease", "Heart Disease"]
@@ -331,10 +330,8 @@ if st.session_state.page == "Single Prediction":
 
         if hasattr(model, "feature_importances_"):
             importances = model.feature_importances_
-
         elif hasattr(model, "coef_"):
             importances = abs(model.coef_[0])
-
         else:
             importances = np.zeros(len(features))
 
@@ -599,6 +596,7 @@ if st.session_state.page == "Logout":
     st.session_state.logged_in = False
     st.success("Logged Out")
     st.stop()
+
 
 
 
