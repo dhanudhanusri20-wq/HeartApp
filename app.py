@@ -300,17 +300,19 @@ if st.session_state.page == "Single Prediction":
         else:
             st.error("High Risk")
 
-        # -------- Health Advice -------- #
-        st.subheader("Health Advice")
+       # -------- AI Medical Advice -------- #
 
-        if probability < 0.3:
-            advice = "Maintain a healthy lifestyle with balanced diet and regular exercise."
-        elif probability < 0.7:
-            advice = "Monitor your health and improve lifestyle habits."
-        else:
-            advice = "High risk detected. Please consult a cardiologist."
+        st.subheader("AI Medical Advice")
 
-        st.info(advice)
+         question = f"""
+         A patient has a heart disease risk score of {probability*100:.2f}%.
+         Give simple heart health advice including diet, exercise, and medical suggestion.
+         """
+
+        ai_advice = ask_chatbot(question)
+
+         st.info(ai_advice)
+
 
         # -------- Probability Graph -------- #
         st.subheader("Prediction Probability")
@@ -604,6 +606,7 @@ if st.session_state.page == "Logout":
     st.session_state.logged_in = False
     st.success("Logged Out")
     st.stop()
+
 
 
 
