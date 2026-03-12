@@ -273,6 +273,17 @@ if st.session_state.page == "Single Prediction":
         result = "Heart Disease Detected" if prediction == 1 else "No Heart Disease"
 
         st.success(result)
+        # -------- AI Medical Advice -------- #
+       st.subheader("AI Medical Advice")
+
+       question = f"""
+       A patient has a heart disease risk score of {probability*100:.2f}%.
+       Give simple heart health advice including diet, exercise, and medical suggestion.
+       """
+
+       ai_advice = ask_chatbot(question)
+
+       st.info(ai_advice)
 
         # -------- PDF REPORT DOWNLOAD -------- #
 
@@ -300,21 +311,8 @@ if st.session_state.page == "Single Prediction":
         else:
             st.error("High Risk")
 
-       # -------- AI Medical Advice -------- #
-
-        st.subheader("AI Medical Advice")
-
-         question = f"""
-         A patient has a heart disease risk score of {probability*100:.2f}%.
-         Give simple heart health advice including diet, exercise, and medical suggestion.
-         """
-
-        ai_advice = ask_chatbot(question)
-
-         st.info(ai_advice)
-
-
-        # -------- Probability Graph -------- #
+       
+       # -------- Probability Graph -------- #
         st.subheader("Prediction Probability")
 
         labels = ["No Heart Disease", "Heart Disease"]
@@ -606,6 +604,7 @@ if st.session_state.page == "Logout":
     st.session_state.logged_in = False
     st.success("Logged Out")
     st.stop()
+
 
 
 
